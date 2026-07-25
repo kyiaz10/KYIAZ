@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ежедневник · Трекер задач</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        colors: {
+          paper: '#F5F3EE', ink: '#232722', muted: '#767C73', card: '#FFFFFF',
+          sage: '#54695D', sagelight: '#E7EDE6',
+          amber: '#B8763E', amberlight: '#F5E7D6',
+          terra: '#B2503E', terralight: '#F3DDD8',
+          line: '#E4E1D8',
+          dpaper: '#1B1E19', dcard: '#242822', dink: '#EDEAE1', dmuted: '#8B9086', dline: '#33372E'
+        },
+        fontFamily: { display: ['Fraunces', 'serif'], sans: ['Inter', 'sans-serif'] }
+      }
+    }
+  }
+</script>
+<style>
+  body { font-family: 'Inter', sans-serif; overflow-x: hidden; }
+  .font-display { font-family: 'Fraunces', serif; }
+
+  /* ---------- decorative background blobs ---------- */
+  .bg-blob { position: fixed; border-radius: 9999px; filter: blur(90px); pointer-events: none; z-index: 0; opacity: 0.32; }
+  .blob-left {
+    width: 420px; height: 420px; top: 6%; left: -190px;
+    background: radial-gradient(circle at 30% 30%, #9CBBA3, #54695D 62%, transparent 78%);
+    animation: floatLeft 20s ease-in-out infinite;
+  }
+  .blob-right {
+    width: 460px; height: 460px; bottom: 4%; right: -210px;
+    background: radial-gradient(circle at 70% 70%, #E8B27E, #B2503E 65%, transparent 80%);
+    animation: floatRight 24s ease-in-out infinite;
+  }
+  .dark .bg-blob { opacity: 0.22; }
+  @keyframes floatLeft  { 0%,100% { transform: translate(0,0); } 50% { transform: translate(24px,-32px); } }
+  @keyframes floatRight { 0%,100% { transform: translate(0,0); } 50% { transform: translate(-28px,28px); } }
+
+  /* ---------- entrance ---------- */
+  @keyframes appIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  .app-shell { animation: appIn 0.5s ease-out; }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-8px) scale(0.98); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @keyframes slideOut {
+    from { opacity: 1; transform: translateX(0); max-height: 120px; margin-bottom: 0.5rem; }
+    to   { opacity: 0; transform: translateX(12px); max-height: 0; margin-bottom: 0; padding-top: 0; padding-bottom: 0; }
+  }
+  @keyframes panelOpen { from { opacity: 0; transform: translateY(-6px); max-height: 0; } to { opacity: 1; transform: translateY(0); max-height: 220px; } }
+  .task-enter { animation: slideIn 0.25s ease-out; }
+  .task-leave { animation: slideOut 0.25s ease-in forwards; overflow: hidden; }
+  .panel-open { animation: panelOpen 0.22s ease-out forwards; overflow: hidden; }
+
+  ::-webkit-scrollbar { height: 6px; width: 8px; }
+  ::-webkit-scrollbar-thumb { background: #D8D4C8; border-radius: 999px; }
+  .dark ::-webkit-scrollbar-thumb { background: #3A3F35; }
+
+  input:focus-visible, button:focus-visible, select:focus-visible { outline: 2px solid #54695D; outline-offset: 2px; }
+
+  /* ---------- 3D priority cube ---------- */
+  .cube-scene { width: 20px; height: 20px; perspective: 80px; flex-shrink: 0; }
+  .cube { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; animation: spin 7s linear infinite; }
+  .cube-face { position: absolute; width: 20px; height: 20px; background: var(--cube-color, #54695D); border-radius: 3px; }
+  .face-front  { transform: translateZ(10px); opacity: 1; }
+  .face-back   { transform: rotateY(180deg) translateZ(10px); opacity: 0.55; }
+  .face-right  { transform: rotateY(90deg) translateZ(10px); opacity: 0.75; }
+  .face-left   { transform: rotateY(-90deg) translateZ(10px); opacity: 0.65; }
+  .face-top    { transform: rotateX(90deg) translateZ(10px); opacity: 0.9; }
+  .face-bottom { transform: rotateX(-90deg) translateZ(10px); opacity: 0.45; }
+  @keyframes spin { from { transform: rotateX(0) rotateY(0); } to { transform: rotateX(360deg) rotateY(360deg); } }
+
+  /* ---------- activity graph ---------- */
+  .graph-node { transform-box: fill-box; transform-origin: center; animation: nodeIn 0.5s ease-out backwards; }
+  .graph-path { animation: pathIn 0.6s ease-out; }
+  @keyframes nodeIn { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  @keyframes pathIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .sidebar-item { transition: background-color .15s ease, border-color .15s ease, color .15s ease, transform .15s ease; }
+  .sidebar-item:active { transform: scale(0.97); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .task-enter, .task-leave, .panel-open, .app-shell, .graph-node, .graph-path, .bg-blob { animation: none !important; }
+    .cube { animation: none !important; transform: rotateX(-18deg) rotateY(28deg); }
+  }
+</style>
+</head>
+<body class="bg-paper dark:bg-dpaper text-ink dark:text-dink min-h-screen antialiased transition-colors duration-300">
+
+  <div class="bg-blob blob-left"></div>
+  <div class="bg-blob blob-right"></div>
+
+  <div class="app-shell relative z-10 max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+
+    <!-- Global header -->
+    <header class="mb-8 flex items-start justify-between gap-4">
+      <div>
+        <p class="text-xs tracking-[0.2em] uppercase text-muted dark:text-dmuted font-medium mb-2" id="today-date">Загрузка даты…</p>
+        <h1 class="font-display text-4xl sm:text-5xl text-ink dark:text-dink">Мои задачи</h1>
+      </div>
+      <button id="theme-toggle" aria-label="Переключить тему" class="shrink-0 w-9 h-9 rounded-full bg-card dark:bg-dcard border border-line dark:border-dline shadow-sm flex items-center justify-center text-sm hover:scale-105 active:scale-95 transition-transform mt-1">
+        <span id="theme-icon">🌙</span>
+      </button>
+    </header>
+
+    <div class="md:grid md:grid-cols-[230px_1fr] md:gap-8 items-start">
+
+      <!-- Sidebar: daily notes (like an Obsidian vault) -->
+      <aside class="mb-6 md:mb-0 md:sticky md:top-8">
+        <h2 class="font-display text-base text-ink/70 dark:text-dink/70 mb-2 flex items-center gap-1.5">
+          <span aria-hidden="true">🗂️</span> Мои дни
+        </h2>
+        <div id="sidebar-list" class="flex md:flex-col gap-2 overflow-x-auto md:overflow-visible pb-1 md:pb-0"></div>
+
+        <div class="mt-6 hidden md:block">
+          <h3 class="text-xs uppercase tracking-wide text-muted dark:text-dmuted mb-2">Активность · 7 дней</h3>
+          <div class="bg-card dark:bg-dcard rounded-2xl border border-line dark:border-dline p-3 shadow-sm">
+            <svg id="activity-graph" viewBox="0 0 200 66" class="w-full h-auto"></svg>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main pane -->
+      <main class="min-w-0">
+
+        <!-- Which day we're editing -->
+        <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+          <p class="text-sm text-muted dark:text-dmuted">
+            Заметка дня: <span id="current-note-label" class="text-ink dark:text-dink font-medium">Сегодня</span>
+          </p>
+          <button id="jump-today" class="hidden text-xs px-3 py-1.5 rounded-full bg-sagelight dark:bg-sage/20 text-sage font-medium hover:bg-sage/20 transition-colors">
+            ← Вернуться к сегодня
+          </button>
+        </div>
+
+        <!-- Stats + progress (for selected day) -->
+        <div class="flex items-center gap-4 flex-wrap mb-3">
+          <div class="flex gap-3 text-sm">
+            <div class="flex flex-col items-center bg-card dark:bg-dcard rounded-xl px-4 py-2 shadow-sm border border-line dark:border-dline min-w-[68px]">
+              <span id="open-count" class="font-display text-xl text-sage leading-none">0</span>
+              <span class="text-[11px] text-muted dark:text-dmuted mt-1 uppercase tracking-wide">в работе</span>
+            </div>
+            <div class="flex flex-col items-center bg-card dark:bg-dcard rounded-xl px-4 py-2 shadow-sm border border-line dark:border-dline min-w-[68px]">
+              <span id="done-count" class="font-display text-xl text-amber leading-none">0</span>
+              <span class="text-[11px] text-muted dark:text-dmuted mt-1 uppercase tracking-wide">готово</span>
+            </div>
+          </div>
+          <div class="flex items-center gap-3 flex-1 min-w-[140px]">
+            <div class="flex-1 h-1.5 rounded-full bg-line dark:bg-dline overflow-hidden">
+              <div id="progress-bar" class="h-full bg-sage rounded-full transition-all duration-500 ease-out" style="width: 0%"></div>
+            </div>
+            <span id="progress-label" class="text-[11px] text-muted dark:text-dmuted tabular-nums w-9 text-right">0%</span>
+          </div>
+        </div>
+
+        <!-- Add form -->
+        <form id="add-form" class="mb-3">
+          <div class="bg-card dark:bg-dcard rounded-2xl shadow-sm border border-line dark:border-dline p-2 flex items-center gap-2 focus-within:border-sage/50 transition-colors">
+            <input id="task-input" type="text" placeholder="Что нужно сделать?" autocomplete="off" maxlength="200"
+              class="flex-1 bg-transparent px-3 py-2.5 text-[15px] placeholder:text-muted/70 dark:placeholder:text-dmuted/70 focus:outline-none">
+            <button type="button" id="toggle-details" aria-label="Показать дополнительные поля"
+              class="shrink-0 w-9 h-9 rounded-xl text-muted dark:text-dmuted hover:bg-paper dark:hover:bg-dpaper transition-colors text-lg leading-none">+</button>
+            <button type="submit"
+              class="shrink-0 bg-sage hover:bg-sage/90 active:scale-95 text-white text-sm font-medium px-5 py-2.5 rounded-xl transition-all duration-150 shadow-sm">
+              Добавить
+            </button>
+          </div>
+          <div id="details-panel" class="hidden mt-2 bg-card dark:bg-dcard rounded-2xl shadow-sm border border-line dark:border-dline p-3 grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <input id="task-tag" type="text" placeholder="Тег (например, работа)" maxlength="24"
+              class="bg-paper dark:bg-dpaper rounded-lg px-3 py-2 text-sm border border-line dark:border-dline focus:outline-none placeholder:text-muted/70 dark:placeholder:text-dmuted/70">
+            <select id="task-priority" class="bg-paper dark:bg-dpaper rounded-lg px-3 py-2 text-sm border border-line dark:border-dline focus:outline-none">
+              <option value="low">Низкий приоритет</option>
+              <option value="medium" selected>Средний приоритет</option>
+              <option value="high">Высокий приоритет</option>
+            </select>
+            <input id="task-deadline" type="date"
+              class="bg-paper dark:bg-dpaper rounded-lg px-3 py-2 text-sm border border-line dark:border-dline focus:outline-none text-muted dark:text-dmuted">
+          </div>
+        </form>
+
+        <!-- Filters -->
+        <div class="mb-8 sm:mb-10 flex flex-wrap gap-2 items-center text-sm">
+          <input id="search-input" type="text" placeholder="Поиск…"
+            class="flex-1 min-w-[120px] bg-transparent border-b border-line dark:border-dline focus:border-sage px-1 py-1.5 text-sm focus:outline-none placeholder:text-muted/70 dark:placeholder:text-dmuted/70">
+          <select id="filter-priority" class="bg-transparent border-b border-line dark:border-dline px-1 py-1.5 text-xs text-muted dark:text-dmuted focus:outline-none">
+            <option value="all">Все приоритеты</option>
+            <option value="high">Высокий</option>
+            <option value="medium">Средний</option>
+            <option value="low">Низкий</option>
+          </select>
+          <select id="filter-tag" class="bg-transparent border-b border-line dark:border-dline px-1 py-1.5 text-xs text-muted dark:text-dmuted focus:outline-none">
+            <option value="all">Все теги</option>
+          </select>
+          <select id="sort-by" class="bg-transparent border-b border-line dark:border-dline px-1 py-1.5 text-xs text-muted dark:text-dmuted focus:outline-none">
+            <option value="created">По дате добавления</option>
+            <option value="priority">По приоритету</option>
+            <option value="deadline">По дедлайну</option>
+          </select>
+        </div>
+
+        <!-- Active tasks -->
+        <section class="mb-10">
+          <h2 class="font-display text-lg text-ink/80 dark:text-dink/80 mb-3">В работе</h2>
+          <div id="active-list" class="flex flex-col gap-2"></div>
+          <p id="active-empty" class="hidden text-sm text-muted dark:text-dmuted italic py-6 text-center bg-card/50 dark:bg-dcard/50 rounded-2xl border border-dashed border-line dark:border-dline">
+            Ничего нет. Добавьте задачу выше или измените фильтры.
+          </p>
+        </section>
+
+        <!-- Completed tasks -->
+        <section>
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="font-display text-lg text-ink/80 dark:text-dink/80">Выполнено</h2>
+            <button id="clear-done" class="text-xs text-muted dark:text-dmuted hover:text-amber transition-colors font-medium tracking-wide uppercase disabled:opacity-0">
+              Очистить всё
+            </button>
+          </div>
+          <div id="done-list" class="flex flex-col gap-2"></div>
+          <p id="done-empty" class="hidden text-sm text-muted dark:text-dmuted italic py-6 text-center bg-card/50 dark:bg-dcard/50 rounded-2xl border border-dashed border-line dark:border-dline">
+            Выполненные задачи этого дня появятся здесь.
+          </p>
+        </section>
+
+      </main>
+    </div>
+
+    <footer class="mt-14 text-center text-xs text-muted/70 dark:text-dmuted/70">
+      Каждый день — отдельная заметка. Всё хранится локально в этом браузере, на этом устройстве.
+    </footer>
+
+  </div>
+
+<script>
+(function () {
+  const STORAGE_KEY = 'todoTracker.tasks.v3';
+  const THEME_KEY = 'todoTracker.theme';
+
+  const PRIORITY_META = {
+    high:   { label: 'Высокий', color: '#B2503E', weight: 3 },
+    medium: { label: 'Средний', color: '#B8763E', weight: 2 },
+    low:    { label: 'Низкий',  color: '#54695D', weight: 1 }
+  };
+
+  // ---------- DOM refs ----------
+  const activeList = document.getElementById('active-list');
+  const doneList = document.getElementById('done-list');
+  const activeEmpty = document.getElementById('active-empty');
+  const doneEmpty = document.getElementById('done-empty');
+  const openCountEl = document.getElementById('open-count');
+  const doneCountEl = document.getElementById('done-count');
+  const progressBar = document.getElementById('progress-bar');
+  const progressLabel = document.getElementById('progress-label');
+
+  const form = document.getElementById('add-form');
+  const input = document.getElementById('task-input');
+  const tagInput = document.getElementById('task-tag');
+  const priorityInput = document.getElementById('task-priority');
+  const deadlineInput = document.getElementById('task-deadline');
+  const toggleDetailsBtn = document.getElementById('toggle-details');
+  const detailsPanel = document.getElementById('details-panel');
+
+  const searchInput = document.getElementById('search-input');
+  const filterPriority = document.getElementById('filter-priority');
+  const filterTag = document.getElementById('filter-tag');
+  const sortBy = document.getElementById('sort-by');
+
+  const clearDoneBtn = document.getElementById('clear-done');
+  const dateEl = document.getElementById('today-date');
+  const themeToggleBtn = document.getElementById('theme-toggle');
+  const themeIcon = document.getElementById('theme-icon');
+
+  const sidebarList = document.getElementById('sidebar-list');
+  const graphSvg = document.getElementById('activity-graph');
+  const currentNoteLabel = document.getElementById('current-note-label');
+  const jumpTodayBtn = document.getElementById('jump-today');
+
+  /** @type {{id:string,text:string,tag:string,priority:'low'|'medium'|'high',deadline:string|null,done:boolean,createdAt:number,date:string}[]} */
+  let tasks = [];
+  let selectedDate = null;
+  let cachedToday = null;
+
+  // ---------- date utils ----------
+  function toDateStr(d) {
+    const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, '0'), day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+  function todayStr() { return toDateStr(new Date()); }
+  function formatDateLabel(ds) {
+    const today = todayStr();
+    const yesterday = toDateStr(new Date(Date.now() - 86400000));
+    if (ds === today) return 'Сегодня';
+    if (ds === yesterday) return 'Вчера';
+    const d = new Date(ds + 'T00:00:00');
+    const label = d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+    return label.charAt(0).toUpperCase() + label.slice(1);
+  }
+  function startOfDay(d) { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; }
+  function formatDeadline(iso) {
+    if (!iso) return null;
+    const date = startOfDay(new Date(iso + 'T00:00:00'));
+    const today = startOfDay(new Date());
+    const diffDays = Math.round((date - today) / 86400000);
+    if (diffDays === 0) return { text: 'Сегодня', overdue: false };
+    if (diffDays === 1) return { text: 'Завтра', overdue: false };
+    if (diffDays < 0) return { text: 'Просрочено · ' + date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }), overdue: true };
+    return { text: date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }), overdue: false };
+  }
+
+  // ---------- storage ----------
+  function loadTasks() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      tasks = raw ? JSON.parse(raw) : [];
+      if (!Array.isArray(tasks)) tasks = [];
+      // migrate tasks without a date (from older versions) to today
+      tasks.forEach(t => { if (!t.date) t.date = todayStr(); });
+    } catch (e) {
+      console.error('Не удалось прочитать данные из LocalStorage:', e);
+      tasks = [];
+    }
+  }
+  function saveTasks() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks)); }
+    catch (e) { console.error('Не удалось сохранить данные в LocalStorage:', e); }
+  }
+
+  // ---------- theme ----------
+  function applyTheme(theme) {
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+    themeIcon.textContent = theme === 'dark' ? '☀️' : '🌙';
+  }
+  function loadTheme() {
+    let theme = localStorage.getItem(THEME_KEY);
+    if (!theme) theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    applyTheme(theme);
+  }
+  themeToggleBtn.addEventListener('click', () => {
+    const isDark = document.documentElement.classList.contains('dark');
+    const next = isDark ? 'light' : 'dark';
+    localStorage.setItem(THEME_KEY, next);
+    applyTheme(next);
+  });
+
+  // ---------- misc utils ----------
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+  function setHeaderDate() {
+    const now = new Date();
+    const formatted = now.toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
+    dateEl.textContent = formatted.charAt(0).toUpperCase() + formatted.slice(1);
+  }
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function cubeHtml(priority) {
+    const color = PRIORITY_META[priority]?.color || PRIORITY_META.medium.color;
+    return `
+      <div class="cube-scene" style="--cube-color:${color}" title="Приоритет: ${PRIORITY_META[priority]?.label || ''}">
+        <div class="cube">
+          <div class="cube-face face-front"></div>
+          <div class="cube-face face-back"></div>
+          <div class="cube-face face-right"></div>
+          <div class="cube-face face-left"></div>
+          <div class="cube-face face-top"></div>
+          <div class="cube-face face-bottom"></div>
+        </div>
+      </div>`;
+  }
+
+  // ---------- sidebar (daily notes list) ----------
+  function getDatesList() {
+    const set = new Set(tasks.map(t => t.date));
+    set.add(todayStr());
+    return Array.from(set).sort((a, b) => b.localeCompare(a));
+  }
+
+  function renderSidebar() {
+    const dates = getDatesList();
+    sidebarList.innerHTML = dates.map(ds => {
+      const dayTasks = tasks.filter(t => t.date === ds);
+      const open = dayTasks.filter(t => !t.done).length;
+      const done = dayTasks.filter(t => t.done).length;
+      const active = ds === selectedDate;
+      const total = open + done;
+      return `
+        <button data-date="${ds}" class="sidebar-item shrink-0 md:w-full text-left px-3 py-2 rounded-xl border ${active ? 'bg-sage text-white border-sage shadow-sm' : 'bg-card dark:bg-dcard border-line dark:border-dline text-ink dark:text-dink hover:border-sage/50'}">
+          <div class="flex items-center justify-between gap-3">
+            <span class="text-sm font-medium whitespace-nowrap">${formatDateLabel(ds)}</span>
+            ${total > 0 ? `<span class="text-[10px] tabular-nums ${active ? 'text-white/80' : 'text-muted dark:text-dmuted'}">${open}/${total}</span>` : ''}
+          </div>
+        </button>`;
+    }).join('');
+
+    currentNoteLabel.textContent = formatDateLabel(selectedDate);
+    jumpTodayBtn.classList.toggle('hidden', selectedDate === todayStr());
+  }
+
+  // ---------- activity graph ----------
+  function renderGraph() {
+    const days = 7;
+    const w = 200, h = 66, pad = 8;
+    const points = [];
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - i);
+      const ds = toDateStr(d);
+      const dayTasks = tasks.filter(t => t.date === ds);
+      const total = dayTasks.length;
+      const done = dayTasks.filter(t => t.done).length;
+      points.push({ date: ds, total, done, pct: total ? (done / total) * 100 : 0 });
+    }
+    const stepX = (w - pad * 2) / (points.length - 1);
+    const coords = points.map((p, i) => {
+      const x = pad + i * stepX;
+      const y = pad + (1 - p.pct / 100) * (h - pad * 2 - 6);
+      return { ...p, x, y };
+    });
+    const pathD = coords.map((p, i) => (i === 0 ? 'M' : 'L') + p.x.toFixed(1) + ' ' + p.y.toFixed(1)).join(' ');
+    const circles = coords.map((p, i) => {
+      const r = p.total === 0 ? 2.5 : Math.min(3 + p.total, 8);
+      const color = p.total === 0 ? '#C9C4B4' : (p.pct === 100 ? '#54695D' : '#B8763E');
+      const selected = p.date === selectedDate;
+      return `<circle data-date="${p.date}" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${r}" fill="${color}"
+        class="graph-node" style="animation-delay:${i * 60}ms; cursor:pointer"
+        ${selected ? 'stroke="#232722" stroke-width="1.5"' : ''}><title>${formatDateLabel(p.date)}: ${p.done}/${p.total}</title></circle>`;
+    }).join('');
+    graphSvg.innerHTML = `<path d="${pathD}" fill="none" stroke="#C9C4B4" stroke-width="1.5" class="graph-path"/>${circles}`;
+  }
+
+  // ---------- filtering / sorting (scoped to selected day) ----------
+  function refreshTagOptions() {
+    const dayTags = tasks.filter(t => t.date === selectedDate).map(t => t.tag).filter(Boolean);
+    const tags = Array.from(new Set(dayTags)).sort((a, b) => a.localeCompare(b, 'ru'));
+    const current = filterTag.value;
+    filterTag.innerHTML = '<option value="all">Все теги</option>' +
+      tags.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('');
+    if (tags.includes(current)) filterTag.value = current;
+  }
+
+  function getDayTasks() { return tasks.filter(t => t.date === selectedDate); }
+
+  function getFilteredSortedActive() {
+    const q = searchInput.value.trim().toLowerCase();
+    const pr = filterPriority.value;
+    const tg = filterTag.value;
+    const sort = sortBy.value;
+
+    let list = getDayTasks().filter(t => !t.done);
+    if (q) list = list.filter(t => t.text.toLowerCase().includes(q) || (t.tag || '').toLowerCase().includes(q));
+    if (pr !== 'all') list = list.filter(t => t.priority === pr);
+    if (tg !== 'all') list = list.filter(t => t.tag === tg);
+
+    list = [...list].sort((a, b) => {
+      if (sort === 'priority') return PRIORITY_META[b.priority].weight - PRIORITY_META[a.priority].weight;
+      if (sort === 'deadline') {
+        if (!a.deadline && !b.deadline) return b.createdAt - a.createdAt;
+        if (!a.deadline) return 1;
+        if (!b.deadline) return -1;
+        return new Date(a.deadline) - new Date(b.deadline);
+      }
+      return b.createdAt - a.createdAt;
+    });
+    return list;
+  }
+
+  // ---------- task cards ----------
+  function createActiveTaskEl(task) {
+    const el = document.createElement('div');
+    el.className = 'task-enter bg-card dark:bg-dcard rounded-2xl shadow-sm border border-line dark:border-dline px-4 py-3 flex items-center gap-3 group';
+    el.dataset.id = task.id;
+
+    const dl = formatDeadline(task.deadline);
+    const dlHtml = dl ? `<span class="text-[11px] px-2 py-0.5 rounded-full ${dl.overdue ? 'bg-terralight text-terra dark:bg-terra/20 dark:text-terra' : 'bg-sagelight text-sage dark:bg-sage/20 dark:text-sage'} whitespace-nowrap">${dl.text}</span>` : '';
+    const tagHtml = task.tag ? `<span class="text-[11px] px-2 py-0.5 rounded-full bg-paper dark:bg-dpaper text-muted dark:text-dmuted border border-line dark:border-dline whitespace-nowrap">#${escapeHtml(task.tag)}</span>` : '';
+
+    el.innerHTML = `
+      <button class="shrink-0 w-6 h-6 rounded-full border-2 border-sage/40 hover:border-sage transition-colors" data-action="complete" aria-label="Отметить выполненным"></button>
+      ${cubeHtml(task.priority)}
+      <div class="flex-1 min-w-0">
+        <p class="text-[15px] text-ink dark:text-dink break-words">${escapeHtml(task.text)}</p>
+        <div class="flex flex-wrap gap-1.5 mt-1">${tagHtml}${dlHtml}</div>
+      </div>
+      <button class="shrink-0 text-xs font-medium text-muted dark:text-dmuted opacity-0 group-hover:opacity-100 hover:text-terra transition-all px-2 py-1" data-action="delete" aria-label="Удалить задачу">Удалить</button>
+    `;
+    return el;
+  }
+
+  function createDoneTaskEl(task) {
+    const el = document.createElement('div');
+    el.className = 'task-enter bg-card/60 dark:bg-dcard/60 rounded-2xl border border-line dark:border-dline px-4 py-3 flex items-center gap-3';
+    el.dataset.id = task.id;
+    el.innerHTML = `
+      <span class="shrink-0 w-6 h-6 rounded-full bg-amber flex items-center justify-center text-white text-xs">✓</span>
+      <span class="flex-1 text-[15px] text-muted dark:text-dmuted line-through break-words">${escapeHtml(task.text)}</span>
+      <button class="shrink-0 text-xs font-medium text-muted dark:text-dmuted hover:text-terra transition-colors px-2 py-1" data-action="delete" aria-label="Удалить задачу">Удалить</button>
+    `;
+    return el;
+  }
+
+  // ---------- master render ----------
+  function render() {
+    renderSidebar();
+    renderGraph();
+
+    const active = getFilteredSortedActive();
+    const done = getDayTasks().filter(t => t.done);
+
+    activeList.innerHTML = '';
+    active.forEach(t => activeList.appendChild(createActiveTaskEl(t)));
+    activeEmpty.classList.toggle('hidden', active.length > 0);
+
+    doneList.innerHTML = '';
+    done.forEach(t => doneList.appendChild(createDoneTaskEl(t)));
+    doneEmpty.classList.toggle('hidden', done.length > 0);
+
+    const dayOpen = getDayTasks().filter(t => !t.done).length;
+    openCountEl.textContent = dayOpen;
+    doneCountEl.textContent = done.length;
+    clearDoneBtn.disabled = done.length === 0;
+
+    const totalDay = getDayTasks().length;
+    const pct = totalDay === 0 ? 0 : Math.round((done.length / totalDay) * 100);
+    progressBar.style.width = pct + '%';
+    progressLabel.textContent = pct + '%';
+
+    refreshTagOptions();
+  }
+
+  // ---------- actions ----------
+  function addTask(text) {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    tasks.unshift({
+      id: uid(),
+      text: trimmed,
+      tag: tagInput.value.trim(),
+      priority: priorityInput.value,
+      deadline: deadlineInput.value || null,
+      done: false,
+      createdAt: Date.now(),
+      date: selectedDate
+    });
+    saveTasks();
+    render();
+  }
+
+  function removeTaskWithAnimation(taskEl, onDone) {
+    taskEl.classList.remove('task-enter');
+    taskEl.classList.add('task-leave');
+    taskEl.addEventListener('animationend', onDone, { once: true });
+  }
+
+  function completeTask(id) {
+    const taskEl = activeList.querySelector(`[data-id="${id}"]`);
+    if (!taskEl) return;
+    removeTaskWithAnimation(taskEl, () => {
+      const task = tasks.find(t => t.id === id);
+      if (task) task.done = true;
+      saveTasks();
+      render();
+    });
+  }
+
+  function deleteTask(id) {
+    const container = document.querySelector(`[data-id="${id}"]`);
+    if (!container) return;
+    removeTaskWithAnimation(container, () => {
+      tasks = tasks.filter(t => t.id !== id);
+      saveTasks();
+      render();
+    });
+  }
+
+  function clearCompleted() {
+    const doneEls = doneList.querySelectorAll('[data-id]');
+    if (doneEls.length === 0) return;
+    let remaining = doneEls.length;
+    doneEls.forEach(el => {
+      removeTaskWithAnimation(el, () => {
+        remaining -= 1;
+        if (remaining === 0) {
+          const doneIds = new Set(getDayTasks().filter(t => t.done).map(t => t.id));
+          tasks = tasks.filter(t => !doneIds.has(t.id));
+          saveTasks();
+          render();
+        }
+      });
+    });
+  }
+
+  // ---------- events ----------
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    addTask(input.value);
+    input.value = '';
+    tagInput.value = '';
+    priorityInput.value = 'medium';
+    deadlineInput.value = '';
+    input.focus();
+  });
+
+  toggleDetailsBtn.addEventListener('click', () => {
+    const isHidden = detailsPanel.classList.contains('hidden');
+    if (isHidden) {
+      detailsPanel.classList.remove('hidden');
+      detailsPanel.classList.add('panel-open');
+      toggleDetailsBtn.textContent = '−';
+    } else {
+      detailsPanel.classList.add('hidden');
+      detailsPanel.classList.remove('panel-open');
+      toggleDetailsBtn.textContent = '+';
+    }
+  });
+
+  activeList.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-action]');
+    if (!btn) return;
+    const id = btn.closest('[data-id]').dataset.id;
+    if (btn.dataset.action === 'complete') completeTask(id);
+    if (btn.dataset.action === 'delete') deleteTask(id);
+  });
+
+  doneList.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-action]');
+    if (!btn) return;
+    const id = btn.closest('[data-id]').dataset.id;
+    if (btn.dataset.action === 'delete') deleteTask(id);
+  });
+
+  clearDoneBtn.addEventListener('click', clearCompleted);
+
+  [searchInput, filterPriority, filterTag, sortBy].forEach(el => {
+    el.addEventListener('input', render);
+    el.addEventListener('change', render);
+  });
+
+  sidebarList.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-date]');
+    if (!btn) return;
+    selectedDate = btn.dataset.date;
+    render();
+  });
+
+  graphSvg.addEventListener('click', (e) => {
+    const node = e.target.closest('[data-date]');
+    if (!node) return;
+    selectedDate = node.dataset.date;
+    render();
+  });
+
+  jumpTodayBtn.addEventListener('click', () => {
+    selectedDate = todayStr();
+    render();
+  });
+
+  // ---------- day rollover watcher ----------
+  function checkDateRollover() {
+    const now = todayStr();
+    if (now !== cachedToday) {
+      const wasOnToday = selectedDate === cachedToday;
+      cachedToday = now;
+      setHeaderDate();
+      if (wasOnToday) selectedDate = now;
+      render();
+    }
+  }
+
+  // ---------- init ----------
+  cachedToday = todayStr();
+  selectedDate = cachedToday;
+  setHeaderDate();
+  loadTheme();
+  loadTasks();
+  render();
+  setInterval(checkDateRollover, 60000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) checkDateRollover(); });
+})();
+</script>
+</body>
+</html>
