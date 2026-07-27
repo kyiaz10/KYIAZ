@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>ORBIT — цифровая вселенная задач</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="theme-color" content="#05060a">
+<!-- Telegram Mini App SDK: работает только если сайт открыт внутри Telegram
+     (через бота, настроенного в @BotFather). В обычном браузере скрипт
+     просто ничего не делает, никакого вреда обычному сайту нет. -->
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -265,6 +273,27 @@ a{color:inherit;}
 .search-wrap input:focus{outline:none; border-color:rgba(140,160,255,.5); background:rgba(255,255,255,.06);}
 .search-wrap svg{position:absolute; left:12px; top:50%; transform:translateY(-50%); width:14px; height:14px; color:var(--text-3); pointer-events:none;}
 
+/* ---- Быстрый ввод задачи ---- */
+.quick-add{
+  display:flex; align-items:center; gap:10px; padding:6px 6px 6px 16px; margin-bottom:18px;
+  border-radius:16px; background:rgba(255,255,255,.035); border:1px solid var(--glass-border);
+  transition:border-color .2s var(--ease), background .2s var(--ease);
+}
+.quick-add:focus-within{border-color:rgba(140,160,255,.45); background:rgba(255,255,255,.055);}
+.quick-add svg.qa-icon{width:16px; height:16px; color:var(--text-3); flex:0 0 auto;}
+.quick-add input{flex:1; font-size:13.5px; background:transparent; border:none; outline:none; padding:10px 0;}
+.quick-add input::placeholder{color:var(--text-3);}
+.quick-add .btn{flex:0 0 auto;}
+.quick-add-hint{font-size:10.5px; color:var(--text-3); padding:0 16px 10px; margin-top:-12px; margin-bottom:14px; line-height:1.5;}
+.quick-add-hint b{color:var(--text-2); font-weight:600;}
+.quick-add-preview{display:flex; gap:6px; flex-wrap:wrap; padding:0 16px 10px; margin-top:-12px;}
+.quick-add-preview .qa-chip{font-size:10.5px; padding:3px 8px; border-radius:20px; display:flex; align-items:center; gap:4px; animation:cardIn .25s var(--ease-soft);}
+.qa-chip.qa-date{color:var(--sky); background:rgba(90,200,250,.12); border:1px solid rgba(90,200,250,.25);}
+.qa-chip.qa-pri-high{color:var(--red); background:rgba(255,93,93,.12); border:1px solid rgba(255,93,93,.25);}
+.qa-chip.qa-pri-medium{color:var(--amber); background:rgba(255,180,84,.12); border:1px solid rgba(255,180,84,.25);}
+.qa-chip.qa-pri-low{color:var(--sky); background:rgba(90,200,250,.12); border:1px solid rgba(90,200,250,.25);}
+.qa-chip.qa-cat{color:var(--emerald); background:rgba(52,211,153,.12); border:1px solid rgba(52,211,153,.25);}
+
 /* ---- Productivity donut card (4 sectors: high / medium / low / done) ---- */
 .donut-card{
   border-radius:var(--r-lg); padding:24px 26px; margin-bottom:26px;
@@ -291,6 +320,42 @@ a{color:inherit;}
 
 .tasks-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr)); gap:14px;}
 
+/* ---- Переключатель вида: список / неделя ---- */
+.view-toggle{display:flex; background:rgba(255,255,255,.04); border:1px solid var(--glass-border); border-radius:11px; padding:3px; gap:3px; flex:0 0 auto;}
+.view-toggle button{padding:8px 12px; font-size:12px; border-radius:8px; color:var(--text-2); display:flex; align-items:center; gap:6px; transition:all .2s var(--ease);}
+.view-toggle button svg{width:13px; height:13px;}
+.view-toggle button.on{background:rgba(255,255,255,.09); color:var(--text-1); box-shadow:0 0 0 1px rgba(255,255,255,.08) inset;}
+
+/* ---- Недельный календарь ---- */
+.week-nav{display:flex; align-items:center; gap:10px; margin-bottom:16px;}
+.week-nav .label{font-size:13px; font-weight:600; color:var(--text-1); min-width:170px; text-align:center;}
+.week-grid{display:grid; grid-template-columns:180px repeat(7, minmax(160px,1fr)); gap:10px; overflow-x:auto; padding-bottom:10px;}
+.week-col{
+  border-radius:16px; padding:12px 10px; min-height:220px;
+  background:linear-gradient(160deg, rgba(255,255,255,.035), rgba(255,255,255,.01));
+  border:1px solid var(--glass-border); transition:background .18s var(--ease), border-color .18s var(--ease);
+}
+.week-col.drag-over{background:rgba(140,160,255,.08); border-color:rgba(140,160,255,.4);}
+.week-col.is-today{border-color:rgba(90,200,250,.4); box-shadow:0 0 0 1px rgba(90,200,250,.15) inset;}
+.week-col-head{display:flex; flex-direction:column; gap:2px; margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid rgba(255,255,255,.06);}
+.week-col-head .dow{font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--text-3); font-weight:600;}
+.week-col-head .dnum{font-size:16px; font-weight:700; color:var(--text-1); font-family:'Space Grotesk',sans-serif;}
+.week-col.is-today .week-col-head .dnum{color:var(--sky);}
+.week-task{
+  padding:8px 9px; border-radius:10px; margin-bottom:7px; font-size:11.5px; line-height:1.4; cursor:grab;
+  background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08); color:var(--text-1);
+  border-left:3px solid var(--pri-glow, var(--text-3));
+  transition:transform .15s var(--ease), box-shadow .15s var(--ease);
+}
+.week-task:active{cursor:grabbing;}
+.week-task:hover{transform:translateY(-1px); box-shadow:0 8px 18px -10px rgba(0,0,0,.6);}
+.week-task.dragging{opacity:.4;}
+.week-task.pri-high{--pri-glow:var(--red);}
+.week-task.pri-medium{--pri-glow:var(--amber);}
+.week-task.pri-low{--pri-glow:var(--sky);}
+.week-task.is-done{opacity:.5; text-decoration:line-through;}
+.week-col-empty{font-size:10.5px; color:var(--text-3); text-align:center; padding:14px 4px;}
+
 .task-card{
   position:relative; border-radius:var(--r-md); padding:14px 15px 13px;
   background:linear-gradient(155deg, rgba(255,255,255,.055), rgba(255,255,255,.015));
@@ -304,6 +369,7 @@ a{color:inherit;}
 .task-card:hover{transform:translateY(-3px); border-color:rgba(255,255,255,.18); box-shadow:0 1px 0 rgba(255,255,255,.08) inset, 0 20px 40px -18px rgba(0,0,0,.85);}
 .task-card:active{transform:translateY(-1px) scale(.99); transition-duration:.08s;}
 .task-card.removing{animation:cardOut .32s var(--ease) forwards;}
+.task-card.swiping{transition:none;}
 @keyframes cardIn{to{opacity:1; transform:translateY(0) scale(1);}}
 @keyframes cardOut{to{opacity:0; transform:scale(.9);}}
 .task-card::before{
@@ -330,6 +396,9 @@ a{color:inherit;}
 .tc-meta{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:2px;}
 .badge{font-size:10.5px; padding:3px 8px; border-radius:20px; display:flex; align-items:center; gap:4px; color:var(--text-2); background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.06);}
 .badge .d{width:6px; height:6px; border-radius:50%; box-shadow:0 0 6px currentColor;}
+.badge.due-overdue{color:var(--red); background:rgba(255,93,93,.12); border-color:rgba(255,93,93,.25);}
+.badge.due-soon{color:var(--amber); background:rgba(255,180,84,.12); border-color:rgba(255,180,84,.25);}
+.badge svg{width:11px; height:11px; flex:0 0 auto;}
 .tc-footer{display:flex; align-items:center; justify-content:space-between; margin-top:11px; padding-top:9px; border-top:1px solid rgba(255,255,255,.05);}
 .tc-time{font-size:10.5px; color:var(--text-3);}
 .tc-del{color:var(--text-3); opacity:0; transition:opacity .15s, color .15s;}
@@ -526,6 +595,7 @@ a{color:inherit;}
       <div>
         <div class="side-group-title" data-i18n="nav.space">Пространство</div>
         <div class="side-item active" id="allTasksNav"><span class="side-dot" style="background:#8b93ff;color:#8b93ff"></span><span data-i18n="nav.allTasks">Все задачи</span><span class="count" id="cntAll">0</span></div>
+        <div class="side-item" id="todayNav"><span class="side-dot" style="background:#ff8fa3;color:#ff8fa3"></span><span data-i18n="nav.today">Сегодня</span><span class="count" id="cntToday">0</span></div>
         <div class="side-item" id="favNav"><span class="side-dot" style="background:#ffd166;color:#ffd166"></span><span data-i18n="nav.favorites">Избранное</span><span class="count" id="cntFav">0</span></div>
       </div>
       <div>
@@ -555,6 +625,13 @@ a{color:inherit;}
     </div>
     <div class="form-row"><label data-i18n="task.name">Название</label><input class="text-input" id="tmText" data-i18n-ph="task.namePh" placeholder="Например, «Подготовить презентацию»" maxlength="200"></div>
     <div class="form-row"><label data-i18n="task.category">Категория</label><select class="select-field" id="tmCategory"></select></div>
+    <div class="form-row"><label data-i18n="task.dueDate">Дедлайн</label>
+      <div style="display:flex; gap:8px;">
+        <input type="date" class="text-input" id="tmDueDate" style="flex:1;">
+        <input type="time" class="text-input" id="tmDueTime" style="flex:0 0 110px;">
+        <button class="btn ghost icon" id="tmDueClear" type="button" title="Убрать дедлайн"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+      </div>
+    </div>
     <div class="form-row"><label data-i18n="task.priority">Приоритет</label>
       <div class="segmented" id="tmPriority">
         <button data-v="low" class="on"><span class="d" style="background:var(--sky);color:var(--sky)"></span><span data-i18n="priority.low">Низкий</span></button>
@@ -668,6 +745,7 @@ const I18N = {
     'login.errNetwork': 'Не удалось связаться с сервером Orbit. Проверьте адрес API.',
     'nav.space': 'Пространство',
     'nav.allTasks': 'Все задачи',
+    'nav.today': 'Сегодня',
     'nav.favorites': 'Избранное',
     'nav.priority': 'Приоритет',
     'nav.categories': 'Категории',
@@ -688,6 +766,11 @@ const I18N = {
     'task.name': 'Название',
     'task.namePh': 'Например, «Подготовить презентацию»',
     'task.category': 'Категория',
+    'task.dueDate': 'Дедлайн',
+    'task.dueClear': 'Без дедлайна',
+    'task.overdue': 'Просрочено',
+    'task.dueToday': 'Сегодня',
+    'task.dueTomorrow': 'Завтра',
     'task.priority': 'Приоритет',
     'task.create': 'Создать задачу',
     'task.save': 'Сохранить',
@@ -713,6 +796,21 @@ const I18N = {
     'view.title': 'Обзор',
     'view.subSpace': 'Пространство',
     'search.placeholder': 'Поиск задач…',
+    'view.listMode': 'Список',
+    'view.weekMode': 'Неделя',
+    'week.unscheduled': 'Без даты',
+    'week.today': 'Сегодня',
+    'week.prev': 'Предыдущая неделя',
+    'week.next': 'Следующая неделя',
+    'week.thisWeek': 'Текущая неделя',
+    'week.empty': 'Пусто',
+    'week.moved': 'Дедлайн задачи обновлён',
+    'dow.mon': 'Пн', 'dow.tue': 'Вт', 'dow.wed': 'Ср', 'dow.thu': 'Чт', 'dow.fri': 'Пт', 'dow.sat': 'Сб', 'dow.sun': 'Вс',
+    'quickAdd.placeholder': 'Быстро добавить задачу… «завтра позвонить маме !высокий #дом»',
+    'quickAdd.hint': 'Подсказка: <b>завтра</b>/<b>пятница</b> — дата, <b>!высокий</b> — приоритет, <b>#категория</b> — категория',
+    'quickAdd.add': 'Добавить',
+    'task.restored': 'Задача восстановлена',
+    'common.undo': 'Отменить',
     'donut.title': 'Продуктивность',
     'donut.sub': 'Распределение задач по приоритету и выполнению',
     'donut.centerLabel': 'в работе',
@@ -758,6 +856,7 @@ const I18N = {
     'login.errNetwork': "Couldn't reach the Orbit server. Check the API address.",
     'nav.space': 'Space',
     'nav.allTasks': 'All tasks',
+    'nav.today': 'Today',
     'nav.favorites': 'Favorites',
     'nav.priority': 'Priority',
     'nav.categories': 'Categories',
@@ -778,6 +877,11 @@ const I18N = {
     'task.name': 'Title',
     'task.namePh': 'e.g. “Prepare the presentation”',
     'task.category': 'Category',
+    'task.dueDate': 'Due date',
+    'task.dueClear': 'No due date',
+    'task.overdue': 'Overdue',
+    'task.dueToday': 'Today',
+    'task.dueTomorrow': 'Tomorrow',
     'task.priority': 'Priority',
     'task.create': 'Create task',
     'task.save': 'Save',
@@ -803,6 +907,21 @@ const I18N = {
     'view.title': 'Overview',
     'view.subSpace': 'Space',
     'search.placeholder': 'Search tasks…',
+    'view.listMode': 'List',
+    'view.weekMode': 'Week',
+    'week.unscheduled': 'No date',
+    'week.today': 'Today',
+    'week.prev': 'Previous week',
+    'week.next': 'Next week',
+    'week.thisWeek': 'This week',
+    'week.empty': 'Empty',
+    'week.moved': 'Task due date updated',
+    'dow.mon': 'Mon', 'dow.tue': 'Tue', 'dow.wed': 'Wed', 'dow.thu': 'Thu', 'dow.fri': 'Fri', 'dow.sat': 'Sat', 'dow.sun': 'Sun',
+    'quickAdd.placeholder': 'Quick add a task… "tomorrow call mom !high #home"',
+    'quickAdd.hint': 'Tip: <b>tomorrow</b>/<b>friday</b> — date, <b>!high</b> — priority, <b>#category</b> — category',
+    'quickAdd.add': 'Add',
+    'task.restored': 'Task restored',
+    'common.undo': 'Undo',
     'donut.title': 'Productivity',
     'donut.sub': 'Task distribution by priority and completion',
     'donut.centerLabel': 'in progress',
@@ -874,8 +993,11 @@ const UIState = {
   categoryId: null,
   priorityFilter: null,
   favOnly: false,
+  todayOnly: false,
   search: '',
   sidebarOpen: false,
+  viewMode: 'list', // 'list' | 'week'
+  weekStart: null,  // Date — понедельник текущей отображаемой недели, ставится при первом рендере
 };
 
 let selectedCountry = COUNTRIES[0];
@@ -893,6 +1015,21 @@ function toast(message, kind='ok'){
   setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 380); }, 3200);
 }
 
+/* Тост с кнопкой действия (используется для Undo) — держится дольше обычного. */
+function toastAction(message, actionLabel, onAction){
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.innerHTML = `
+    <span class="dot" style="background:var(--amber);color:var(--amber)"></span>
+    <span>${escapeHtml(message)}</span>
+    <button style="margin-left:6px; font-weight:600; color:var(--sky); text-decoration:underline; text-underline-offset:2px;">${escapeHtml(actionLabel)}</button>
+  `;
+  $('#toasts').appendChild(el);
+  const dismiss = () => { el.classList.add('out'); setTimeout(() => el.remove(), 380); };
+  el.querySelector('button').onclick = () => { onAction(); dismiss(); };
+  setTimeout(dismiss, 5000);
+}
+
 function timeAgo(iso){
   if(!iso) return '';
   const diffSec = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000));
@@ -904,9 +1041,147 @@ function timeAgo(iso){
 
 function uid(){ return Date.now() + '_' + Math.random().toString(36).slice(2,8); }
 
+/* ---- Дедлайны: форматирование и статус (просрочено / скоро) ---- */
+function dueDateStatus(iso){
+  if(!iso) return null;
+  const due = new Date(iso);
+  const now = new Date();
+  const diffMs = due.getTime() - now.getTime();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfDue = new Date(due.getFullYear(), due.getMonth(), due.getDate());
+  const dayDiff = Math.round((startOfDue - startOfToday) / 86400000);
+
+  let label;
+  if(dayDiff === 0) label = t('task.dueToday');
+  else if(dayDiff === 1) label = t('task.dueTomorrow');
+  else label = due.toLocaleDateString(currentLang === 'ru' ? 'ru-RU' : 'en-US', {day:'2-digit', month:'short'});
+
+  const hasTime = iso.length > 10;
+  if(hasTime){
+    label += ', ' + due.toLocaleTimeString(currentLang === 'ru' ? 'ru-RU' : 'en-US', {hour:'2-digit', minute:'2-digit'});
+  }
+
+  let kind = 'normal';
+  if(diffMs < 0) kind = 'overdue';
+  else if(dayDiff <= 1) kind = 'soon';
+
+  return {label, kind, overdueLabel: t('task.overdue')};
+}
+
 /* ---------------------------------------------------------------------------
-   3. API-клиент — реальные вызовы к server.py
+   Умный разбор строки быстрого ввода: дата / приоритет / категория из текста.
+   Работает по ключевым словам локально (без внешних AI-сервисов) — распознаёт
+   "сегодня/завтра/послезавтра", дни недели (RU/EN), маркеры !высокий/!high и
+   тег #категория, если такая категория уже существует у пользователя.
 --------------------------------------------------------------------------- */
+const QA_WEEKDAYS = {
+  'воскресенье':0, 'понедельник':1, 'вторник':2, 'среда':3, 'среду':3,
+  'четверг':4, 'пятница':5, 'пятницу':5, 'суббота':6, 'субботу':6,
+  'sunday':0, 'monday':1, 'tuesday':2, 'wednesday':3, 'thursday':4, 'friday':5, 'saturday':6,
+};
+const QA_PRIORITY_WORDS = {
+  'высокий':'high', 'высок':'high', 'срочно':'high', 'важно':'high', 'high':'high', 'important':'high', 'urgent':'high',
+  'средний':'medium', 'medium':'medium',
+  'низкий':'low', 'low':'low',
+};
+
+function pad2(n){ return String(n).padStart(2, '0'); }
+function isoDateOnly(d){ return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }
+
+function getMondayOf(date){
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const dow = d.getDay(); // 0=вс..6=сб
+  const diffToMonday = dow === 0 ? -6 : 1 - dow;
+  d.setDate(d.getDate() + diffToMonday);
+  return d;
+}
+
+function addDays(date, n){
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate() + n);
+}
+
+function sameDate(a, b){
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+}
+
+function weekRangeLabel(monday){
+  const sunday = addDays(monday, 6);
+  const loc = currentLang === 'ru' ? 'ru-RU' : 'en-US';
+  const optsShort = {day:'numeric', month:'short'};
+  return `${monday.toLocaleDateString(loc, optsShort)} — ${sunday.toLocaleDateString(loc, optsShort)}`;
+}
+
+function resolveQaDate(token){
+  const now = new Date();
+  if(token === 'сегодня' || token === 'today') return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  if(token === 'завтра' || token === 'tomorrow') return new Date(now.getFullYear(), now.getMonth(), now.getDate()+1);
+  if(token === 'послезавтра') return new Date(now.getFullYear(), now.getMonth(), now.getDate()+2);
+  if(token in QA_WEEKDAYS){
+    const target = QA_WEEKDAYS[token];
+    const todayDow = now.getDay();
+    const diff = (target - todayDow + 7) % 7;
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate() + diff);
+  }
+  return null;
+}
+
+function parseQuickAddText(raw){
+  const tokens = raw.split(/\s+/).filter(Boolean);
+  const kept = [];
+  const chips = [];
+  let due_date = null;
+  let priority = null;
+  let category_id = null;
+  let categoryLabel = null;
+
+  tokens.forEach(rawTok => {
+    const clean = rawTok.replace(/[.,!?;:]+$/g, '');
+    const lower = clean.toLowerCase();
+
+    if(rawTok.startsWith('!') && QA_PRIORITY_WORDS[lower.slice(1)]){
+      priority = QA_PRIORITY_WORDS[lower.slice(1)];
+      chips.push({type:'priority', value:priority});
+      return;
+    }
+    if(rawTok.startsWith('#') && clean.length > 1){
+      const tag = clean.slice(1).toLowerCase();
+      const match = State.categories.find(c => c.name.toLowerCase() === tag || c.name.toLowerCase().startsWith(tag));
+      if(match){
+        category_id = match.id;
+        categoryLabel = match.name;
+        chips.push({type:'category', value:match.name});
+        return;
+      }
+      // категория не найдена — оставляем как обычный текст, не отбрасываем
+      kept.push(rawTok);
+      return;
+    }
+    const resolved = resolveQaDate(lower);
+    if(resolved && !due_date){
+      due_date = isoDateOnly(resolved);
+      const label = (lower === 'сегодня' || lower === 'today') ? t('task.dueToday')
+        : (lower === 'завтра' || lower === 'tomorrow') ? t('task.dueTomorrow')
+        : resolved.toLocaleDateString(currentLang === 'ru' ? 'ru-RU' : 'en-US', {weekday:'short', day:'2-digit', month:'short'});
+      chips.push({type:'date', value:label});
+      return;
+    }
+    kept.push(rawTok);
+  });
+
+  return {
+    cleanText: kept.join(' ').trim(),
+    due_date, priority, category_id, categoryLabel, chips,
+  };
+}
+
+function quickAddChipsHtml(chips){
+  return chips.map(c => {
+    if(c.type === 'date') return `<span class="qa-chip qa-date"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>${escapeHtml(c.value)}</span>`;
+    if(c.type === 'priority') return `<span class="qa-chip qa-pri-${c.value}">${t('priority.'+c.value)}</span>`;
+    if(c.type === 'category') return `<span class="qa-chip qa-cat">${escapeHtml(c.value)}</span>`;
+    return '';
+  }).join('');
+}
 async function api(path, {method='GET', body=null, auth=true} = {}){
   const headers = {'Content-Type': 'application/json'};
   if(auth && State.sessionToken) headers['Authorization'] = 'Bearer ' + State.sessionToken;
@@ -936,6 +1211,7 @@ async function api(path, {method='GET', body=null, auth=true} = {}){
 const Api = {
   requestCode: (phone, channel) => api('/api/auth/request-code', {method:'POST', auth:false, body:{phone, channel}}),
   verifyCode:  (phone, code)    => api('/api/auth/verify-code',  {method:'POST', auth:false, body:{phone, code}}),
+  telegramLogin: (initData)     => api('/api/auth/telegram-login', {method:'POST', auth:false, body:{init_data: initData}}),
   logout:      ()               => api('/api/auth/logout',      {method:'POST'}),
   me:          ()               => api('/api/me'),
   listSessions:()               => api('/api/sessions'),
@@ -968,12 +1244,45 @@ function friendlyError(err){
 /* ---------------------------------------------------------------------------
    4. Загрузчик и старт
 --------------------------------------------------------------------------- */
+/* ---------------------------------------------------------------------------
+   3.5. Telegram Mini App: определение окружения, тема, автоматический вход
+--------------------------------------------------------------------------- */
+const TG = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
+const isInTelegram = !!(TG && TG.initData);
+
+function initTelegramEnvironment(){
+  if(!isInTelegram) return;
+  try{
+    TG.ready();
+    TG.expand();
+    if(TG.setHeaderColor) TG.setHeaderColor('#05060a');
+    if(TG.setBackgroundColor) TG.setBackgroundColor('#05060a');
+    // Мы намеренно не переопределяем всю палитру Orbit под тему Telegram —
+    // фирменный космический стиль остаётся; синхронизируем только системные
+    // элементы (заголовок/фон вокруг приложения), чтобы не было белых полос.
+    document.documentElement.classList.add('in-telegram');
+  }catch(_e){ /* Telegram SDK недоступен по какой-то причине — просто продолжаем как обычный сайт */ }
+}
+
+async function tryTelegramAutoLogin(){
+  if(!isInTelegram) return false;
+  try{
+    const resp = await Api.telegramLogin(TG.initData);
+    State.sessionToken = resp.session_token;
+    localStorage.setItem(TOKEN_KEY, State.sessionToken);
+    return true;
+  }catch(_err){
+    return false;
+  }
+}
+
 function boot(){
   $('#loaderMark').innerHTML = 'ORBIT'.split('').map((ch,i)=>`<span style="animation-delay:${i*0.05}s">${ch}</span>`).join('');
   wireStaticEvents();
   applyI18n();
   selectedCountry = COUNTRIES[0];
   updateCountryBtn();
+  initTelegramEnvironment();
 
   const steps = ['loader.step1','loader.step2','loader.step3','loader.step4'];
   let i = 0;
@@ -986,6 +1295,16 @@ function boot(){
   setTimeout(async () => {
     clearInterval(interval);
     $('#loader').classList.add('hide');
+
+    // Внутри Telegram Mini App — пробуем войти автоматически, минуя экран
+    // с номером телефона: Telegram уже подтвердил личность пользователя.
+    if(!State.sessionToken && isInTelegram){
+      const ok = await tryTelegramAutoLogin();
+      if(!ok){
+        // Не получилось (например, сервер недоступен) — не блокируем человека,
+        // даём обычный вход по телефону как запасной вариант.
+      }
+    }
 
     if(State.sessionToken){
       try{
@@ -1000,7 +1319,7 @@ function boot(){
       showLoginScreen();
     }
     State.booted = true;
-  }, 1500);
+  }, isInTelegram ? 400 : 1500);
 }
 
 function showLoginScreen(){
@@ -1300,8 +1619,15 @@ function renderCategoryFilters(){
 }
 
 function setActiveNavAllTasks(){
-  UIState.categoryId = null; UIState.priorityFilter = null; UIState.favOnly = false;
+  UIState.categoryId = null; UIState.priorityFilter = null; UIState.favOnly = false; UIState.todayOnly = false;
   renderAll();
+}
+
+function isDueToday(iso){
+  if(!iso) return false;
+  const due = new Date(iso);
+  const now = new Date();
+  return due.getFullYear() === now.getFullYear() && due.getMonth() === now.getMonth() && due.getDate() === now.getDate();
 }
 
 /* ---- Donut: 4 сектора (высокий / средний / низкий / выполнено) с анимацией чисел ---- */
@@ -1376,6 +1702,7 @@ function renderDonut(container){
 /* ---- Карточки задач ---- */
 function taskMatchesFilters(tk){
   if(UIState.favOnly && !tk.is_favorite) return false;
+  if(UIState.todayOnly && !isDueToday(tk.due_date)) return false;
   if(UIState.priorityFilter && tk.priority !== UIState.priorityFilter) return false;
   if(UIState.categoryId && tk.category_id !== UIState.categoryId) return false;
   if(UIState.search){
@@ -1383,6 +1710,16 @@ function taskMatchesFilters(tk){
     if(!tk.text.toLowerCase().includes(q)) return false;
   }
   return true;
+}
+
+function dueBadgeHtml(tk){
+  if(!tk.due_date || tk.completed) return '';
+  const st = dueDateStatus(tk.due_date);
+  if(!st) return '';
+  const cls = st.kind === 'overdue' ? ' due-overdue' : (st.kind === 'soon' ? ' due-soon' : '');
+  const icon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>';
+  const text = st.kind === 'overdue' ? st.overdueLabel : st.label;
+  return `<span class="badge${cls}">${icon}${escapeHtml(text)}</span>`;
 }
 
 function categoryColor(catId){
@@ -1398,11 +1735,14 @@ function renderTasksGrid(container){
   const filtered = State.tasks.filter(taskMatchesFilters).sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
 
   if(!filtered.length){
-    const anyFilterActive = UIState.favOnly || UIState.priorityFilter || UIState.categoryId || UIState.search;
+    const anyFilterActive = UIState.favOnly || UIState.todayOnly || UIState.priorityFilter || UIState.categoryId || UIState.search;
     container.innerHTML = `<div class="empty-state">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg>
       <div class="t">${anyFilterActive ? t('empty.filtered') : t('empty.none')}</div>
+      ${anyFilterActive ? '' : `<button class="btn primary" id="emptyStateCreateBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>${t('task.new')}</button>`}
     </div>`;
+    const btn = $('#emptyStateCreateBtn', container);
+    if(btn) btn.onclick = () => openTaskModal(null);
     return;
   }
 
@@ -1420,6 +1760,7 @@ function renderTasksGrid(container){
       </div>
       <div class="tc-meta">
         ${catColor ? `<span class="badge"><span class="d" style="background:${catColor};color:${catColor}"></span>${escapeHtml(categoryName(tk.category_id))}</span>` : ''}
+        ${dueBadgeHtml(tk)}
       </div>
       <div class="tc-footer">
         <span class="tc-time">${timeAgo(tk.created_at)}</span>
@@ -1428,10 +1769,72 @@ function renderTasksGrid(container){
     `;
     $('.tc-check', card).onclick = (e) => { e.stopPropagation(); toggleTaskDone(tk); };
     $('.tc-fav', card).onclick = (e) => { e.stopPropagation(); toggleTaskFav(tk); };
-    $('.tc-del', card).onclick = (e) => { e.stopPropagation(); deleteTask(tk, card); };
-    card.onclick = () => openTaskModal(tk);
+    $('.tc-del', card).onclick = (e) => { e.stopPropagation(); deleteTaskWithUndo(tk); };
+    card.onclick = () => { if(card.dataset.justSwiped === '1') return; openTaskModal(tk); };
+    wireCardSwipe(card, tk);
     container.appendChild(card);
   });
+}
+
+/* ---- Свайпы на мобильном: вправо — выполнить, влево — удалить ---- */
+function wireCardSwipe(card, tk){
+  let startX = 0, startY = 0, deltaX = 0, dragging = false, decided = false, isHorizontal = false;
+  const SWIPE_THRESHOLD = 90;
+
+  card.addEventListener('touchstart', (e) => {
+    if(e.touches.length !== 1) return;
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    deltaX = 0; dragging = true; decided = false; isHorizontal = false;
+    card.classList.add('swiping');
+  }, {passive: true});
+  card.addEventListener('touchmove', (e) => {
+    if(!dragging) return;
+    const x = e.touches[0].clientX;
+    const y = e.touches[0].clientY;
+    deltaX = x - startX;
+    const deltaY = y - startY;
+
+    if(!decided){
+      if(Math.abs(deltaX) > 8 || Math.abs(deltaY) > 8){
+        decided = true;
+        isHorizontal = Math.abs(deltaX) > Math.abs(deltaY);
+      }
+    }
+    if(isHorizontal){
+      card.style.transform = `translateX(${deltaX}px)`;
+      card.style.opacity = String(Math.max(0.35, 1 - Math.abs(deltaX) / 260));
+    }
+  }, {passive: true});
+
+  const endSwipe = () => {
+    if(!dragging) return;
+    dragging = false;
+    card.classList.remove('swiping');
+
+    if(isHorizontal && Math.abs(deltaX) > SWIPE_THRESHOLD){
+      card.dataset.justSwiped = '1';
+      setTimeout(() => { card.dataset.justSwiped = '0'; }, 400);
+      if(deltaX > 0){
+        card.style.transition = 'transform .25s var(--ease), opacity .25s var(--ease)';
+        card.style.transform = 'translateX(120%)';
+        card.style.opacity = '0';
+        setTimeout(() => toggleTaskDone(tk), 150);
+      }else{
+        card.style.transition = 'transform .25s var(--ease), opacity .25s var(--ease)';
+        card.style.transform = 'translateX(-120%)';
+        card.style.opacity = '0';
+        setTimeout(() => deleteTaskWithUndo(tk), 150);
+      }
+    }else{
+      card.style.transition = 'transform .25s var(--ease-soft), opacity .25s var(--ease-soft)';
+      card.style.transform = '';
+      card.style.opacity = '';
+    }
+  };
+
+  card.addEventListener('touchend', endSwipe);
+  card.addEventListener('touchcancel', endSwipe);
 }
 
 function escapeHtml(s){
@@ -1442,7 +1845,10 @@ function escapeHtml(s){
 
 function renderAll(){
   $('#cntAll').textContent = State.tasks.filter(x => !x.completed).length;
+  $('#cntToday').textContent = State.tasks.filter(x => !x.completed && isDueToday(x.due_date)).length;
   $('#cntFav').textContent = State.tasks.filter(x => x.is_favorite).length;
+  const topLevelActive = UIState.favOnly ? 'favNav' : (UIState.todayOnly ? 'todayNav' : (!UIState.categoryId && !UIState.priorityFilter ? 'allTasksNav' : null));
+  ['allTasksNav', 'todayNav', 'favNav'].forEach(id => $('#'+id).classList.toggle('active', id === topLevelActive));
   renderPriorityFilters();
   renderCategoryFilters();
 
@@ -1460,6 +1866,19 @@ function renderAll(){
   `;
   main.appendChild(header);
 
+  const quickAddWrap = document.createElement('div');
+  quickAddWrap.innerHTML = `
+    <div class="quick-add">
+      <svg class="qa-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+      <input id="quickAddInput" placeholder="${t('quickAdd.placeholder')}" maxlength="220">
+      <button class="btn primary icon" id="quickAddSubmit" title="${t('quickAdd.add')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+    </div>
+    <div class="quick-add-preview" id="quickAddPreview"></div>
+    <div class="quick-add-hint" id="quickAddHint">${t('quickAdd.hint')}</div>
+  `;
+  main.appendChild(quickAddWrap);
+  wireQuickAdd(quickAddWrap);
+
   const toolbar = document.createElement('div');
   toolbar.className = 'toolbar-row';
   toolbar.innerHTML = `
@@ -1467,9 +1886,21 @@ function renderAll(){
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
       <input class="text-input" id="searchInput" placeholder="${t('search.placeholder')}" value="${escapeHtml(UIState.search)}">
     </div>
+    <div class="view-toggle" id="viewToggle">
+      <button data-v="list" class="${UIState.viewMode === 'list' ? 'on' : ''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>${t('view.listMode')}</button>
+      <button data-v="week" class="${UIState.viewMode === 'week' ? 'on' : ''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg>${t('view.weekMode')}</button>
+    </div>
   `;
   main.appendChild(toolbar);
   $('#searchInput', toolbar).oninput = (e) => { UIState.search = e.target.value; renderTasksGridOnly(); };
+  $$('#viewToggle button', toolbar).forEach(b => b.onclick = () => { UIState.viewMode = b.dataset.v; renderAll(); });
+
+  if(UIState.viewMode === 'week'){
+    const weekWrap = document.createElement('div');
+    main.appendChild(weekWrap);
+    renderWeekView(weekWrap);
+    return;
+  }
 
   const donutWrap = document.createElement('div');
   main.appendChild(donutWrap);
@@ -1487,8 +1918,121 @@ function renderTasksGridOnly(){
   if(grid) renderTasksGrid(grid);
 }
 
+/* ---------------------------------------------------------------------------
+   Недельный календарь (стиль Tweek): 7 дней + колонка "без даты",
+   перетаскивание задач между днями меняет дедлайн.
+--------------------------------------------------------------------------- */
+const DOW_KEYS = ['dow.mon','dow.tue','dow.wed','dow.thu','dow.fri','dow.sat','dow.sun'];
+
+function renderWeekView(container){
+  if(!UIState.weekStart) UIState.weekStart = getMondayOf(new Date());
+  const monday = UIState.weekStart;
+  const today = new Date();
+
+  const nav = document.createElement('div');
+  nav.className = 'week-nav';
+  nav.innerHTML = `
+    <button class="btn ghost icon" id="weekPrevBtn" title="${t('week.prev')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
+    <button class="btn ghost" id="weekTodayBtn">${t('week.thisWeek')}</button>
+    <button class="btn ghost icon" id="weekNextBtn" title="${t('week.next')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></button>
+    <span class="label">${weekRangeLabel(monday)}</span>
+  `;
+  container.appendChild(nav);
+  $('#weekPrevBtn', nav).onclick = () => { UIState.weekStart = addDays(UIState.weekStart, -7); renderAll(); };
+  $('#weekNextBtn', nav).onclick = () => { UIState.weekStart = addDays(UIState.weekStart, 7); renderAll(); };
+  $('#weekTodayBtn', nav).onclick = () => { UIState.weekStart = getMondayOf(new Date()); renderAll(); };
+
+  const grid = document.createElement('div');
+  grid.className = 'week-grid';
+
+  const filteredTasks = State.tasks.filter(tk => {
+    if(UIState.categoryId && tk.category_id !== UIState.categoryId) return false;
+    if(UIState.priorityFilter && tk.priority !== UIState.priorityFilter) return false;
+    if(UIState.favOnly && !tk.is_favorite) return false;
+    if(UIState.search && !tk.text.toLowerCase().includes(UIState.search.toLowerCase())) return false;
+    return true;
+  });
+
+  // Колонка "Без даты"
+  const unscheduled = filteredTasks.filter(tk => !tk.due_date);
+  grid.appendChild(buildWeekColumn({
+    dateKey: null,
+    headHtml: `<div class="dow">${t('week.unscheduled')}</div><div class="dnum">—</div>`,
+    tasks: unscheduled,
+    isToday: false,
+  }));
+
+  for(let i = 0; i < 7; i++){
+    const date = addDays(monday, i);
+    const dateKey = isoDateOnly(date);
+    const dayTasks = filteredTasks.filter(tk => tk.due_date && tk.due_date.slice(0,10) === dateKey);
+    grid.appendChild(buildWeekColumn({
+      dateKey,
+      headHtml: `<div class="dow">${t(DOW_KEYS[i])}</div><div class="dnum">${date.getDate()}</div>`,
+      tasks: dayTasks,
+      isToday: sameDate(date, today),
+    }));
+  }
+
+  container.appendChild(grid);
+}
+
+function buildWeekColumn({dateKey, headHtml, tasks, isToday}){
+  const col = document.createElement('div');
+  col.className = 'week-col' + (isToday ? ' is-today' : '');
+  col.dataset.dateKey = dateKey || '';
+  col.innerHTML = `<div class="week-col-head">${headHtml}</div><div class="week-col-body"></div>`;
+
+  const body = $('.week-col-body', col);
+  if(!tasks.length){
+    body.innerHTML = `<div class="week-col-empty">${t('week.empty')}</div>`;
+  }else{
+    tasks.forEach(tk => body.appendChild(buildWeekTaskChip(tk)));
+  }
+
+  col.addEventListener('dragover', (e) => { e.preventDefault(); col.classList.add('drag-over'); });
+  col.addEventListener('dragleave', () => col.classList.remove('drag-over'));
+  col.addEventListener('drop', async (e) => {
+    e.preventDefault();
+    col.classList.remove('drag-over');
+    const taskId = Number(e.dataTransfer.getData('text/plain'));
+    const tk = State.tasks.find(x => x.id === taskId);
+    if(!tk) return;
+    const newDue = dateKey || null;
+    if(tk.due_date === newDue) return;
+    const prevDue = tk.due_date;
+    tk.due_date = newDue;
+    renderAll();
+    try{
+      await Api.updateTask(taskId, {due_date: newDue});
+    }catch(err){
+      tk.due_date = prevDue;
+      renderAll();
+      toast(friendlyError(err), 'err');
+    }
+  });
+
+  return col;
+}
+
+function buildWeekTaskChip(tk){
+  const chip = document.createElement('div');
+  chip.className = `week-task pri-${tk.priority}` + (tk.completed ? ' is-done' : '');
+  chip.draggable = true;
+  chip.textContent = tk.text;
+  chip.title = tk.text;
+  chip.addEventListener('dragstart', (e) => {
+    e.dataTransfer.setData('text/plain', String(tk.id));
+    chip.classList.add('dragging');
+  });
+  chip.addEventListener('dragend', () => chip.classList.remove('dragging'));
+  chip.addEventListener('click', () => openTaskModal(tk));
+  return chip;
+}
+
 function viewTitleText(){
   if(UIState.favOnly) return t('nav.favorites');
+  if(UIState.todayOnly) return t('nav.today');
   if(UIState.priorityFilter) return t(PRIORITY_DEFS.find(p=>p.id===UIState.priorityFilter).labelKey);
   if(UIState.categoryId) return categoryName(UIState.categoryId);
   return t('view.title');
@@ -1497,6 +2041,54 @@ function viewTitleText(){
 /* ---------------------------------------------------------------------------
    9. Действия с задачами (реальные запросы к API)
 --------------------------------------------------------------------------- */
+/* ---------------------------------------------------------------------------
+   9. Быстрый ввод задачи (с NLP-разбором даты/приоритета/категории)
+--------------------------------------------------------------------------- */
+function wireQuickAdd(container){
+  const input = $('#quickAddInput', container);
+  const preview = $('#quickAddPreview', container);
+  const submitBtn = $('#quickAddSubmit', container);
+
+  input.addEventListener('input', () => {
+    const parsed = parseQuickAddText(input.value);
+    preview.innerHTML = quickAddChipsHtml(parsed.chips);
+  });
+  input.addEventListener('keydown', (e) => {
+    if(e.key === 'Enter'){ e.preventDefault(); submitQuickAdd(input, preview); }
+  });
+  submitBtn.onclick = () => submitQuickAdd(input, preview);
+}
+
+async function submitQuickAdd(input, preview){
+  const raw = input.value.trim();
+  if(!raw) return;
+
+  const parsed = parseQuickAddText(raw);
+  const text = parsed.cleanText || raw;
+  const priority = parsed.priority || 'medium';
+  const category_id = parsed.category_id || null;
+  const due_date = parsed.due_date || null;
+
+  input.value = '';
+  preview.innerHTML = '';
+  input.focus();
+
+  try{
+    const resp = await Api.createTask({text, priority, category_id, due_date});
+    State.tasks.unshift({
+      id: resp.id, text, priority, category_id, due_date,
+      completed: false, is_favorite: false,
+      created_at: new Date().toISOString(), completed_at: null,
+    });
+    renderAll();
+    // После renderAll DOM панели быстрого ввода пересоздаётся — возвращаем фокус.
+    const freshInput = $('#quickAddInput');
+    if(freshInput) freshInput.focus();
+  }catch(err){
+    toast(friendlyError(err), 'err');
+  }
+}
+
 async function toggleTaskDone(tk){
   const newVal = !tk.completed;
   tk.completed = newVal;
@@ -1525,28 +2117,46 @@ async function toggleTaskFav(tk){
   }
 }
 
-let pendingTaskDelete = null;
-function deleteTask(tk, cardEl){
-  pendingTaskDelete = tk;
-  $('#confirmTitle').textContent = t('task.deleteTitle');
-  $('#confirmText').textContent = t('task.deleteText', {name: tk.text});
-  $('#confirmModal').dataset.mode = 'task';
-  $('#confirmModal').classList.add('show');
+/* ---- Удаление задачи с возможностью отмены (Undo) ---- */
+let pendingUndo = null; // {task, idx, timerId}
+
+function finalizePendingDeletion(){
+  if(!pendingUndo) return;
+  clearTimeout(pendingUndo.timerId);
+  const tk = pendingUndo.task;
+  pendingUndo = null;
+  Api.deleteTask(tk.id).catch(err => toast(friendlyError(err), 'err'));
 }
 
-async function performDeleteTask(){
-  const tk = pendingTaskDelete;
-  if(!tk) return;
-  $('#confirmModal').classList.remove('show');
-  try{
-    await Api.deleteTask(tk.id);
-    State.tasks = State.tasks.filter(x => x.id !== tk.id);
-    toast(t('task.deleted'), 'ok');
-    renderAll();
-  }catch(err){
-    toast(friendlyError(err), 'err');
-  }
-  pendingTaskDelete = null;
+function deleteTaskWithUndo(tk){
+  // Если уже есть отложенное удаление — сначала завершаем его по-настоящему.
+  if(pendingUndo) finalizePendingDeletion();
+
+  const idx = State.tasks.findIndex(x => x.id === tk.id);
+  if(idx === -1) return;
+  State.tasks.splice(idx, 1);
+  renderAll();
+
+  const timerId = setTimeout(() => {
+    if(pendingUndo && pendingUndo.task.id === tk.id){
+      Api.deleteTask(tk.id).catch(err => toast(friendlyError(err), 'err'));
+      pendingUndo = null;
+    }
+  }, 5000);
+
+  pendingUndo = {task: tk, idx, timerId};
+  toastAction(t('task.deleted'), t('common.undo'), () => undoDelete());
+}
+
+function undoDelete(){
+  if(!pendingUndo) return;
+  clearTimeout(pendingUndo.timerId);
+  const {task, idx} = pendingUndo;
+  const insertAt = Math.min(idx, State.tasks.length);
+  State.tasks.splice(insertAt, 0, task);
+  pendingUndo = null;
+  renderAll();
+  toast(t('task.restored'), 'ok');
 }
 
 let editingTaskId = null;
@@ -1557,6 +2167,14 @@ function openTaskModal(task){
   $('#tmDelete').style.display = task ? 'inline-flex' : 'none';
   $('#tmText').value = task ? task.text : '';
   fillCategorySelect($('#tmCategory'), task ? task.category_id : null);
+  if(task && task.due_date){
+    const d = new Date(task.due_date);
+    $('#tmDueDate').value = d.toISOString().slice(0,10);
+    $('#tmDueTime').value = task.due_date.length > 10 ? d.toTimeString().slice(0,5) : '';
+  }else{
+    $('#tmDueDate').value = '';
+    $('#tmDueTime').value = '';
+  }
   const pr = task ? task.priority : 'medium';
   $$('#tmPriority button').forEach(b => b.classList.toggle('on', b.dataset.v === pr));
   $('#taskModal').classList.add('show');
@@ -1576,16 +2194,20 @@ async function saveTaskModal(){
   const catRaw = $('#tmCategory').value;
   const category_id = catRaw ? Number(catRaw) : null;
 
+  const dateVal = $('#tmDueDate').value;
+  const timeVal = $('#tmDueTime').value;
+  const due_date = dateVal ? (timeVal ? `${dateVal}T${timeVal}:00` : dateVal) : null;
+
   try{
     if(editingTaskId){
-      await Api.updateTask(editingTaskId, {text, priority, category_id});
+      await Api.updateTask(editingTaskId, {text, priority, category_id, due_date});
       const tk = State.tasks.find(x => x.id === editingTaskId);
-      if(tk){ tk.text = text; tk.priority = priority; tk.category_id = category_id; }
+      if(tk){ tk.text = text; tk.priority = priority; tk.category_id = category_id; tk.due_date = due_date; }
       toast(t('task.updated'), 'ok');
     }else{
-      const resp = await Api.createTask({text, priority, category_id});
+      const resp = await Api.createTask({text, priority, category_id, due_date});
       State.tasks.unshift({
-        id: resp.id, text, priority, category_id,
+        id: resp.id, text, priority, category_id, due_date,
         completed: false, is_favorite: false,
         created_at: new Date().toISOString(), completed_at: null,
       });
@@ -1602,7 +2224,7 @@ function deleteFromModal(){
   if(!editingTaskId) return;
   const tk = State.tasks.find(x => x.id === editingTaskId);
   closeTaskModal();
-  if(tk) deleteTask(tk, null);
+  if(tk) deleteTaskWithUndo(tk);
 }
 
 /* ---------------------------------------------------------------------------
@@ -1655,9 +2277,7 @@ async function performDeleteCategory(){
 }
 
 function handleConfirmOk(){
-  const mode = $('#confirmModal').dataset.mode;
-  if(mode === 'category') performDeleteCategory();
-  else performDeleteTask();
+  performDeleteCategory();
 }
 
 /* ---------------------------------------------------------------------------
@@ -1698,12 +2318,24 @@ function wireStaticEvents(){
   $$('.lang-switch').forEach(sw => { $$('button', sw).forEach(b => b.onclick = () => setLang(b.dataset.lang)); });
 
   $('#allTasksNav').onclick = setActiveNavAllTasks;
-  $('#favNav').onclick = () => { UIState.favOnly = !UIState.favOnly; renderAll(); };
+  $('#todayNav').onclick = () => {
+    const turningOn = !UIState.todayOnly;
+    UIState.todayOnly = turningOn; UIState.favOnly = false;
+    if(turningOn){ UIState.categoryId = null; UIState.priorityFilter = null; }
+    renderAll();
+  };
+  $('#favNav').onclick = () => {
+    const turningOn = !UIState.favOnly;
+    UIState.favOnly = turningOn; UIState.todayOnly = false;
+    if(turningOn){ UIState.categoryId = null; UIState.priorityFilter = null; }
+    renderAll();
+  };
   $('#btnAddCategory').onclick = openCategoryModal;
 
   $('#btnNewTask').onclick = () => openTaskModal(null);
   $('#tmSave').onclick = saveTaskModal;
   $('#tmDelete').onclick = deleteFromModal;
+  $('#tmDueClear').onclick = () => { $('#tmDueDate').value = ''; $('#tmDueTime').value = ''; };
   $('#tmPriority').querySelectorAll('button').forEach(b => b.onclick = () => {
     $$('#tmPriority button').forEach(x => x.classList.remove('on'));
     b.classList.add('on');
@@ -1736,7 +2368,19 @@ function wireStaticEvents(){
 }
 
 /* ---------------------------------------------------------------------------
-   12. Старт
+   12. PWA: регистрация service worker (для установки и оффлайн-доступа)
+--------------------------------------------------------------------------- */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {
+      // Тихо игнорируем: например, при открытии как file:// без веб-сервера
+      // регистрация SW невозможна, но само приложение продолжит работать.
+    });
+  });
+}
+
+/* ---------------------------------------------------------------------------
+   13. Старт
 --------------------------------------------------------------------------- */
 boot();
 
