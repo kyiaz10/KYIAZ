@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>ORBIT — цифровая вселенная задач</title>
 <link rel="manifest" href="manifest.json">
-<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
-<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <meta name="theme-color" content="#05060a">
 <!-- Telegram Mini App SDK: работает только если сайт открыт внутри Telegram
      (через бота, настроенного в @BotFather). В обычном браузере скрипт
@@ -101,9 +101,9 @@ a{color:inherit;}
   opacity:0; pointer-events:none; transition:opacity .6s var(--ease-soft);
 }
 #loginScreen.show{opacity:1; pointer-events:all;}
+#starfieldCanvas{position:absolute; inset:0; z-index:0; pointer-events:none;}
 .login-lang-switch{position:absolute; top:20px; right:20px; z-index:8001;}
-.login-card{
-  position:relative;
+.login-card{position:relative; z-index:1;
   width:400px; max-width:100%; padding:34px 30px 28px; border-radius:24px; text-align:center;
   background:linear-gradient(165deg, rgba(20,20,32,.86), rgba(10,10,18,.9));
   border:1px solid rgba(255,255,255,.1);
@@ -113,7 +113,7 @@ a{color:inherit;}
 .login-step{display:none;}
 .login-step.active{display:block; animation:loginStepIn .45s var(--ease-soft);}
 @keyframes loginStepIn{from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);}}
-.login-glyph{width:52px; height:52px; margin:0 auto 18px; border-radius:50%; background:conic-gradient(from 120deg, var(--sky), var(--violet), var(--amber), var(--sky)); box-shadow:0 0 30px 4px rgba(90,150,255,.35);}
+.login-glyph{width:64px; height:64px; margin:0 auto 18px; border-radius:50%; object-fit:contain; filter:drop-shadow(0 0 20px rgba(76,201,240,.35));}
 .login-title{font-size:21px; font-weight:600; margin-bottom:8px;}
 .login-sub{font-size:13px; color:var(--text-2); line-height:1.55; margin-bottom:22px;}
 .login-card .text-input{margin-bottom:12px; text-align:center;}
@@ -187,7 +187,7 @@ a{color:inherit;}
   position:relative; z-index:40;
 }
 .brand{display:flex; align-items:center; gap:9px; font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:16px; letter-spacing:.02em; flex:0 0 auto;}
-.brand-glyph{width:20px; height:20px; border-radius:50%; background:conic-gradient(from 120deg, var(--sky), var(--violet), var(--amber), var(--sky)); box-shadow:0 0 14px 1px rgba(90,150,255,.5); flex:0 0 auto;}
+.brand-glyph{width:22px; height:22px; object-fit:contain; flex:0 0 auto;}
 .btn-menu{display:none; flex:0 0 auto;}
 .topbar-spacer{flex:1;}
 .topbar-actions{display:flex; align-items:center; gap:8px;}
@@ -505,6 +505,7 @@ a{color:inherit;}
 
 <!-- ============ Login screen ============ -->
 <div id="loginScreen">
+  <canvas id="starfieldCanvas"></canvas>
   <div class="login-lang-switch">
     <div class="lang-switch" id="langSwitchLogin">
       <button data-lang="ru">RU</button>
@@ -513,42 +514,33 @@ a{color:inherit;}
   </div>
 
   <div class="login-card">
-    <!-- Step 1: телефон -->
-    <div class="login-step active" id="loginStepPhone">
-      <div class="login-glyph"></div>
+    <!-- Step 1: email -->
+    <div class="login-step active" id="loginStepEmail">
+      <img class="login-glyph" src="icon-192.png" alt="Orbit">
       <div class="login-title display" data-i18n="login.title">Добро пожаловать в Orbit!</div>
-      <div class="login-sub" data-i18n="login.subPhone">Введите номер телефона, чтобы войти или создать аккаунт.</div>
-      <div class="login-error" id="loginErrorPhone"></div>
-      <div class="phone-field" id="phoneField">
-        <div class="country-select-wrap">
-          <button class="country-select-btn" id="countrySelectBtn" type="button">
-            <span id="countryFlag">🇰🇬</span><span id="countryCode">+996</span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-          </button>
-          <div class="country-dropdown" id="countryDropdown"></div>
-        </div>
-        <input class="text-input" id="phoneInput" placeholder="555 123 456" inputmode="numeric" autocomplete="off">
+      <div class="login-sub" data-i18n="login.subEmail">Введите email, чтобы войти или создать аккаунт.</div>
+      <div class="login-error" id="loginErrorEmail"></div>
+      <input class="text-input" id="emailInput" data-i18n-ph="login.emailPh" placeholder="you@example.com" type="email" autocomplete="email" style="margin-bottom:16px; text-align:center;">
+      <button class="btn primary block" id="emailSubmit" data-i18n="login.getCode" disabled>Получить код</button>
+
+      <div style="display:flex; align-items:center; gap:10px; margin:18px 0 14px;">
+        <div style="flex:1; height:1px; background:rgba(255,255,255,.08);"></div>
+        <span style="font-size:11px; color:var(--text-3);" data-i18n="login.or">или</span>
+        <div style="flex:1; height:1px; background:rgba(255,255,255,.08);"></div>
       </div>
-      <div class="phone-hint" id="phoneHint"></div>
-      <div class="channel-toggle" id="channelToggle">
-        <button data-ch="whatsapp" class="on">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4c-.3-.1-1.6-.8-1.9-.9-.2-.1-.4-.1-.6.1-.2.2-.7.9-.9 1-.2.2-.3.2-.6.1-.9-.4-1.7-.9-2.4-1.6-.6-.6-1.1-1.4-1.5-2.2-.1-.2 0-.4.1-.5.2-.2.4-.5.6-.7.1-.2.2-.4.1-.6-.1-.3-.9-2.1-1-2.4-.1-.3-.3-.3-.5-.3h-.5c-.2 0-.5.1-.6.3-.4.4-.7 1-.7 1.7 0 1.9 1.4 3.8 1.6 4 .2.3 2.1 3.2 5.1 4.4 2.5 1 2.5.7 3 .6.5-.1 1.6-.6 1.8-1.2.2-.6.2-1.1.1-1.2-.1-.1-.2-.1-.5-.2z"/><path d="M12 2C6.5 2 2 6.5 2 12c0 1.9.5 3.6 1.4 5.1L2 22l5.1-1.3C8.6 21.5 10.3 22 12 22c5.5 0 10-4.5 10-10S17.5 2 12 2z" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>
-          WhatsApp
-        </button>
-        <button data-ch="sms">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v12H7l-3 3V4z"/></svg>
-          SMS
-        </button>
+
+      <button class="btn ghost block" id="guestLoginBtn" data-i18n="login.guestBtn">Продолжить как гость</button>
+      <div class="phone-hint" style="text-align:center; margin-top:10px;" data-i18n="login.guestWarning">
+        Гостевой доступ привязан только к этому браузеру. Если очистите данные браузера или зайдёте с другого устройства — все ваши задачи будут потеряны безвозвратно.
       </div>
-      <button class="btn primary block" id="phoneSubmit" data-i18n="login.getCode" disabled>Получить код</button>
     </div>
 
     <!-- Step 2: код подтверждения -->
     <div class="login-step" id="loginStepCode">
       <button class="login-back" id="codeBackBtn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
-      <div class="login-glyph"></div>
+      <img class="login-glyph" src="icon-192.png" alt="Orbit">
       <div class="login-title display" data-i18n="login.codeTitle">Введите код</div>
-      <div class="login-sub"><span data-i18n="login.codeSubPrefix">Мы отправили 4-значный код на номер</span> <span class="login-hint-num" id="codeTargetNumber"></span></div>
+      <div class="login-sub"><span data-i18n="login.codeSubPrefixEmail">Мы отправили 4-значный код на</span> <span class="login-hint-num" id="codeTargetNumber"></span></div>
       <div class="login-error" id="loginErrorCode"></div>
       <div class="code-inputs" id="codeInputs">
         <input maxlength="1" inputmode="numeric" autocomplete="off">
@@ -570,7 +562,7 @@ a{color:inherit;}
     <button class="btn ghost icon btn-menu" id="btnMenu" title="Меню">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
     </button>
-    <div class="brand"><span class="brand-glyph"></span>ORBIT</div>
+    <div class="brand"><img class="brand-glyph" src="icon-192.png" alt="Orbit">ORBIT</div>
     <div class="topbar-spacer"></div>
     <div class="topbar-actions">
       <div class="lang-switch" id="langSwitchApp">
@@ -727,17 +719,20 @@ const CATEGORY_PALETTE = ['#8b93ff','#ffd166','#5ac8fa','#34d399','#ff8fa3','#c0
 const I18N = {
   ru: {
     'login.title': 'Добро пожаловать в Orbit!',
-    'login.subPhone': 'Введите номер телефона, чтобы войти или создать аккаунт.',
+    'login.subEmail': 'Введите email, чтобы войти или создать аккаунт.',
+    'login.emailPh': 'you@example.com',
+    'login.or': 'или',
+    'login.guestBtn': 'Продолжить как гость',
+    'login.guestWarning': 'Гостевой доступ привязан только к этому браузеру. Если очистите данные браузера или зайдёте с другого устройства — все ваши задачи будут потеряны безвозвратно.',
     'login.getCode': 'Получить код',
     'login.sending': 'Отправляем…',
     'login.codeTitle': 'Введите код',
-    'login.codeSubPrefix': 'Мы отправили 4-значный код на номер',
+    'login.codeSubPrefixEmail': 'Мы отправили 4-значный код на',
     'login.verify': 'Подтвердить',
     'login.verifying': 'Проверяем…',
     'login.resend': 'Отправить код ещё раз',
     'login.resendIn': 'Повторно через {n} сек',
-    'login.errPhone': 'Проверьте номер — не хватает цифр для этой страны',
-    'login.errPhoneReq': 'Не удалось отправить код. Попробуйте ещё раз.',
+    'login.errEmail': 'Проверьте адрес email — он выглядит некорректно',
     'login.errCode': 'Неверный код. Попробуйте ещё раз.',
     'login.errCodeExpired': 'Код истёк — запросите новый.',
     'login.errTooMany': 'Слишком много попыток. Запросите новый код.',
@@ -838,17 +833,20 @@ const I18N = {
   },
   en: {
     'login.title': 'Welcome to Orbit!',
-    'login.subPhone': 'Enter your phone number to sign in or create an account.',
+    'login.subEmail': 'Enter your email to sign in or create an account.',
+    'login.emailPh': 'you@example.com',
+    'login.or': 'or',
+    'login.guestBtn': 'Continue as guest',
+    'login.guestWarning': 'Guest access is tied to this browser only. If you clear your browser data or open the app on another device, all your tasks will be lost permanently.',
     'login.getCode': 'Get code',
     'login.sending': 'Sending…',
     'login.codeTitle': 'Enter the code',
-    'login.codeSubPrefix': 'We sent a 4-digit code to',
+    'login.codeSubPrefixEmail': 'We sent a 4-digit code to',
     'login.verify': 'Verify',
     'login.verifying': 'Verifying…',
     'login.resend': 'Resend code',
     'login.resendIn': 'Resend in {n}s',
-    'login.errPhone': 'Check the number — not enough digits for this country',
-    'login.errPhoneReq': 'Could not send the code. Please try again.',
+    'login.errEmail': 'Check the email address — it looks invalid',
     'login.errCode': 'Wrong code. Please try again.',
     'login.errCodeExpired': 'Code expired — request a new one.',
     'login.errTooMany': 'Too many attempts. Request a new code.',
@@ -963,9 +961,6 @@ function applyI18n(){
   document.querySelectorAll('[data-i18n-ph]').forEach(el => { el.placeholder = t(el.dataset.i18nPh); });
   document.querySelectorAll('[data-i18n-title]').forEach(el => { el.title = t(el.dataset.i18nTitle); });
   $$('.lang-switch').forEach(sw => $$('button', sw).forEach(b => b.classList.toggle('on', b.dataset.lang === currentLang)));
-  renderCountryDropdown();
-  updateCountryBtn();
-  updatePhoneValidityUI();
   if(State.booted) renderAll();
 }
 
@@ -1000,8 +995,7 @@ const UIState = {
   weekStart: null,  // Date — понедельник текущей отображаемой недели, ставится при первом рендере
 };
 
-let selectedCountry = COUNTRIES[0];
-let pendingPhone = null;
+let pendingEmail = null;
 let resendTimer = null;
 let resendSecondsLeft = 0;
 
@@ -1209,8 +1203,9 @@ async function api(path, {method='GET', body=null, auth=true} = {}){
 }
 
 const Api = {
-  requestCode: (phone, channel) => api('/api/auth/request-code', {method:'POST', auth:false, body:{phone, channel}}),
-  verifyCode:  (phone, code)    => api('/api/auth/verify-code',  {method:'POST', auth:false, body:{phone, code}}),
+  requestCodeEmail: (email) => api('/api/auth/request-code-email', {method:'POST', auth:false, body:{email}}),
+  verifyCodeEmail:  (email, code) => api('/api/auth/verify-code-email', {method:'POST', auth:false, body:{email, code}}),
+  guestLogin:  ()               => api('/api/auth/guest-login', {method:'POST', auth:false, body:{}}),
   telegramLogin: (initData)     => api('/api/auth/telegram-login', {method:'POST', auth:false, body:{init_data: initData}}),
   logout:      ()               => api('/api/auth/logout',      {method:'POST'}),
   me:          ()               => api('/api/me'),
@@ -1228,7 +1223,7 @@ const Api = {
 
 /* Единая обработка ошибок API -> текст на нужном языке */
 const ERROR_KEY_MAP = {
-  invalid_phone: 'login.errPhone',
+  invalid_email: 'login.errEmail',
   cooldown: 'login.errCooldown',
   no_code: 'login.errCode',
   code_expired: 'login.errCodeExpired',
@@ -1276,13 +1271,68 @@ async function tryTelegramAutoLogin(){
   }
 }
 
+/* ---------------------------------------------------------------------------
+   Звёздное небо на фоне экрана входа: медленно плывущие мерцающие точки.
+   Лёгкий canvas-эффект, останавливается сам, когда экран входа скрыт.
+--------------------------------------------------------------------------- */
+function initStarfield(){
+  const canvas = $('#starfieldCanvas');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  let stars = [];
+  let w = 0, h = 0;
+
+  function resize(){
+    w = canvas.width = window.innerWidth;
+    h = canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const STAR_COUNT = Math.min(140, Math.floor((window.innerWidth * window.innerHeight) / 9000));
+  for(let i = 0; i < STAR_COUNT; i++){
+    stars.push({
+      x: Math.random() * w,
+      y: Math.random() * h,
+      r: Math.random() * 1.3 + 0.3,
+      baseAlpha: Math.random() * 0.5 + 0.25,
+      twinkleSpeed: Math.random() * 0.015 + 0.005,
+      twinklePhase: Math.random() * Math.PI * 2,
+      driftX: (Math.random() - 0.5) * 0.06,
+      driftY: (Math.random() - 0.5) * 0.06,
+    });
+  }
+
+  function frame(){
+    if(!$('#loginScreen').classList.contains('show')){
+      requestAnimationFrame(frame);
+      return;
+    }
+    ctx.clearRect(0, 0, w, h);
+    stars.forEach(s => {
+      s.twinklePhase += s.twinkleSpeed;
+      s.x += s.driftX;
+      s.y += s.driftY;
+      if(s.x < 0) s.x = w; if(s.x > w) s.x = 0;
+      if(s.y < 0) s.y = h; if(s.y > h) s.y = 0;
+
+      const alpha = s.baseAlpha * (0.6 + 0.4 * Math.sin(s.twinklePhase));
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(210, 225, 255, ${alpha.toFixed(3)})`;
+      ctx.fill();
+    });
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
 function boot(){
   $('#loaderMark').innerHTML = 'ORBIT'.split('').map((ch,i)=>`<span style="animation-delay:${i*0.05}s">${ch}</span>`).join('');
   wireStaticEvents();
   applyI18n();
-  selectedCountry = COUNTRIES[0];
-  updateCountryBtn();
   initTelegramEnvironment();
+  initStarfield();
 
   const steps = ['loader.step1','loader.step2','loader.step3','loader.step4'];
   let i = 0;
@@ -1344,93 +1394,66 @@ function enterApp(){
 }
 
 /* ---------------------------------------------------------------------------
-   5. Страна / маска телефона (валидация формата на фронте)
+   5. Валидация email на фронте
 --------------------------------------------------------------------------- */
-function renderCountryDropdown(){
-  const wrap = $('#countryDropdown');
-  wrap.innerHTML = '';
-  COUNTRIES.forEach(c => {
-    const row = document.createElement('div');
-    row.className = 'country-opt';
-    const name = currentLang === 'en' ? c.nameEn : c.name;
-    row.innerHTML = `<span>${c.flag} ${name}</span><span class="code">${c.code}</span>`;
-    row.onclick = () => {
-      selectedCountry = c;
-      updateCountryBtn();
-      $('#countryDropdown').classList.remove('show');
-      $('#phoneInput').value = '';
-      $('#phoneInput').focus();
-      updatePhoneValidityUI();
-    };
-    wrap.appendChild(row);
-  });
+const EMAIL_RE_FRONT = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
+function updateEmailValidityUI(){
+  const val = $('#emailInput').value.trim();
+  const submitBtn = $('#emailSubmit');
+  submitBtn.disabled = !EMAIL_RE_FRONT.test(val);
 }
-
-function updateCountryBtn(){
-  $('#countryFlag').textContent = selectedCountry.flag;
-  $('#countryCode').textContent = selectedCountry.code;
-  $('#phoneInput').placeholder = selectedCountry.example;
-}
-
-function digitsOnly(s){ return (s || '').replace(/\D/g, ''); }
-
-function updatePhoneValidityUI(){
-  const raw = digitsOnly($('#phoneInput').value);
-  const hint = $('#phoneHint');
-  const submitBtn = $('#phoneSubmit');
-  const valid = raw.length === selectedCountry.digits;
-
-  if(raw.length === 0){
-    hint.textContent = '';
-  }else if(!valid){
-    hint.textContent = t('login.errPhone');
-    hint.style.color = 'var(--red)';
-  }else{
-    hint.textContent = '';
-  }
-  submitBtn.disabled = !valid;
-}
-
-function fullPhoneNumber(){
-  return selectedCountry.code + digitsOnly($('#phoneInput').value);
-}
-
-let selectedChannel = 'whatsapp';
 
 /* ---------------------------------------------------------------------------
-   6. Флоу входа: запрос кода -> ввод кода -> сессия
+   6. Флоу входа: email -> код -> сессия; либо гостевой вход
 --------------------------------------------------------------------------- */
-async function submitPhoneStep(){
-  const raw = digitsOnly($('#phoneInput').value);
-  if(raw.length !== selectedCountry.digits){
-    $('#phoneField').classList.add('shake');
-    setTimeout(() => $('#phoneField').classList.remove('shake'), 400);
-    $('#loginErrorPhone').textContent = t('login.errPhone');
+async function submitEmailStep(){
+  const email = $('#emailInput').value.trim();
+  if(!EMAIL_RE_FRONT.test(email)){
+    $('#loginErrorEmail').textContent = t('login.errEmail');
     return;
   }
 
-  $('#loginErrorPhone').textContent = '';
-  const btn = $('#phoneSubmit');
+  $('#loginErrorEmail').textContent = '';
+  const btn = $('#emailSubmit');
   const originalText = btn.textContent;
   btn.disabled = true;
   btn.textContent = t('login.sending');
 
-  const phone = fullPhoneNumber();
   try{
-    await Api.requestCode(phone, selectedChannel);
-    pendingPhone = phone;
-    $('#codeTargetNumber').textContent = phone;
-    $('#loginStepPhone').classList.remove('active');
+    await Api.requestCodeEmail(email);
+    pendingEmail = email;
+    $('#codeTargetNumber').textContent = email;
+    $('#loginStepEmail').classList.remove('active');
     $('#loginStepCode').classList.add('active');
     $$('#codeInputs input').forEach(i => i.value = '');
     setTimeout(() => $('#codeInputs input')[0].focus(), 80);
     startResendCooldown(45);
   }catch(err){
-    $('#loginErrorPhone').textContent = friendlyError(err);
+    $('#loginErrorEmail').textContent = friendlyError(err);
   }finally{
     btn.disabled = false;
     btn.textContent = originalText;
-    updatePhoneValidityUI();
+    updateEmailValidityUI();
+  }
+}
+
+async function submitGuestLogin(){
+  const btn = $('#guestLoginBtn');
+  const originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = t('login.sending');
+  try{
+    const resp = await Api.guestLogin();
+    State.sessionToken = resp.session_token;
+    localStorage.setItem(TOKEN_KEY, State.sessionToken);
+    await loadUserAndData();
+    enterApp();
+  }catch(err){
+    $('#loginErrorEmail').textContent = friendlyError(err);
+  }finally{
+    btn.disabled = false;
+    btn.textContent = originalText;
   }
 }
 
@@ -1454,9 +1477,9 @@ function startResendCooldown(seconds){
 }
 
 async function resendCode(){
-  if(!pendingPhone) return;
+  if(!pendingEmail) return;
   try{
-    await Api.requestCode(pendingPhone, selectedChannel);
+    await Api.requestCodeEmail(pendingEmail);
     toast(t('login.sending'), 'ok');
     startResendCooldown(45);
   }catch(err){
@@ -1479,7 +1502,7 @@ async function submitCodeStep(){
   btn.textContent = t('login.verifying');
 
   try{
-    const resp = await Api.verifyCode(pendingPhone, code);
+    const resp = await Api.verifyCodeEmail(pendingEmail, code);
     State.sessionToken = resp.session_token;
     localStorage.setItem(TOKEN_KEY, State.sessionToken);
     await loadUserAndData();
@@ -2284,22 +2307,12 @@ function handleConfirmOk(){
    11. Общая проводка событий
 --------------------------------------------------------------------------- */
 function wireStaticEvents(){
-  $('#phoneSubmit').onclick = submitPhoneStep;
-  $('#phoneInput').addEventListener('input', updatePhoneValidityUI);
-  $('#phoneInput').addEventListener('keydown', e => { if(e.key === 'Enter') submitPhoneStep(); });
-  $('#codeBackBtn').onclick = () => { $('#loginStepCode').classList.remove('active'); $('#loginStepPhone').classList.add('active'); setTimeout(() => $('#phoneInput').focus(), 60); };
+  $('#emailSubmit').onclick = submitEmailStep;
+  $('#emailInput').addEventListener('input', updateEmailValidityUI);
+  $('#emailInput').addEventListener('keydown', e => { if(e.key === 'Enter') submitEmailStep(); });
+  $('#guestLoginBtn').onclick = submitGuestLogin;
+  $('#codeBackBtn').onclick = () => { $('#loginStepCode').classList.remove('active'); $('#loginStepEmail').classList.add('active'); setTimeout(() => $('#emailInput').focus(), 60); };
   $('#resendBtn').onclick = resendCode;
-
-  $('#countrySelectBtn').onclick = (e) => { e.stopPropagation(); $('#countryDropdown').classList.toggle('show'); };
-  document.addEventListener('click', (e) => { if(!e.target.closest('.country-select-wrap')) $('#countryDropdown').classList.remove('show'); });
-
-  $$('#channelToggle button').forEach(b => {
-    b.onclick = () => {
-      selectedChannel = b.dataset.ch;
-      $$('#channelToggle button').forEach(x => x.classList.remove('on'));
-      b.classList.add('on');
-    };
-  });
 
   const codeInputs = $$('#codeInputs input');
   codeInputs.forEach((inp, idx) => {
