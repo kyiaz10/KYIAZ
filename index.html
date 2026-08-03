@@ -693,7 +693,7 @@ a{color:inherit;}
 --------------------------------------------------------------------------- */
 // ВАЖНО: GitHub Pages отдаёт только статику — сам server.py там не выполняется.
 // Разверните backend отдельно (Render / Railway / VPS / свой сервер) и укажите его адрес здесь.
-const API_BASE = window.ORBIT_API_BASE || 'https://orbit-backend-24ml.onrender.com';
+const API_BASE = window.ORBIT_API_BASE || 'http://127.0.0.1:5000';
 
 const STORAGE_PREFIX = 'orbit_';
 const TOKEN_KEY = STORAGE_PREFIX + 'session_token';
@@ -726,6 +726,8 @@ const I18N = {
     'login.guestWarning': 'Гостевой доступ привязан только к этому браузеру. Если очистите данные браузера или зайдёте с другого устройства — все ваши задачи будут потеряны безвозвратно.',
     'login.getCode': 'Получить код',
     'login.sending': 'Отправляем…',
+    'login.stillSending': 'Ещё немного…',
+    'login.wakingServer': 'Сервер просыпается, обычно до минуты…',
     'login.codeTitle': 'Введите код',
     'login.codeSubPrefixEmail': 'Мы отправили 4-значный код на',
     'login.verify': 'Подтвердить',
@@ -840,6 +842,8 @@ const I18N = {
     'login.guestWarning': 'Guest access is tied to this browser only. If you clear your browser data or open the app on another device, all your tasks will be lost permanently.',
     'login.getCode': 'Get code',
     'login.sending': 'Sending…',
+    'login.stillSending': 'Almost there…',
+    'login.wakingServer': 'Server is waking up, usually under a minute…',
     'login.codeTitle': 'Enter the code',
     'login.codeSubPrefixEmail': 'We sent a 4-digit code to',
     'login.verify': 'Verify',
@@ -1407,6 +1411,35 @@ function updateEmailValidityUI(){
 /* ---------------------------------------------------------------------------
    6. Флоу входа: email -> код -> сессия; либо гостевой вход
 --------------------------------------------------------------------------- */
+/* ---------------------------------------------------------------------------
+   Индикатор ожидания на кнопке: спиннер + подбадривающий текст, который
+   меняется, если ответ долго не приходит (актуально из-за "просыпания"
+   бесплатного сервера — первый запрос после простоя может занимать до минуты).
+--------------------------------------------------------------------------- */
+function startLoadingIndicator(btn, initialTextKey){
+  const original = btn.innerHTML;
+  const spinnerSvg = '<svg class="spin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="15" height="15"><path d="M21 12a9 9 0 11-9-9"/></svg>';
+
+  const stages = [
+    {at: 0,     text: t(initialTextKey || 'login.sending')},
+    {at: 4000,  text: t('login.stillSending')},
+    {at: 10000, text: t('login.wakingServer')},
+  ];
+
+  let timers = [];
+  function render(text){ btn.innerHTML = `${spinnerSvg}<span>${text}</span>`; }
+  render(stages[0].text);
+
+  stages.slice(1).forEach(s => {
+    timers.push(setTimeout(() => render(s.text), s.at));
+  });
+
+  return function stop(){
+    timers.forEach(clearTimeout);
+    btn.innerHTML = original;
+  };
+}
+
 async function submitEmailStep(){
   const email = $('#emailInput').value.trim();
   if(!EMAIL_RE_FRONT.test(email)){
@@ -1416,9 +1449,8 @@ async function submitEmailStep(){
 
   $('#loginErrorEmail').textContent = '';
   const btn = $('#emailSubmit');
-  const originalText = btn.textContent;
   btn.disabled = true;
-  btn.textContent = t('login.sending');
+  const stopLoading = startLoadingIndicator(btn);
 
   try{
     await Api.requestCodeEmail(email);
@@ -1432,17 +1464,16 @@ async function submitEmailStep(){
   }catch(err){
     $('#loginErrorEmail').textContent = friendlyError(err);
   }finally{
+    stopLoading();
     btn.disabled = false;
-    btn.textContent = originalText;
     updateEmailValidityUI();
   }
 }
 
 async function submitGuestLogin(){
   const btn = $('#guestLoginBtn');
-  const originalText = btn.textContent;
   btn.disabled = true;
-  btn.textContent = t('login.sending');
+  const stopLoading = startLoadingIndicator(btn);
   try{
     const resp = await Api.guestLogin();
     State.sessionToken = resp.session_token;
@@ -1452,8 +1483,8 @@ async function submitGuestLogin(){
   }catch(err){
     $('#loginErrorEmail').textContent = friendlyError(err);
   }finally{
+    stopLoading();
     btn.disabled = false;
-    btn.textContent = originalText;
   }
 }
 
@@ -1497,9 +1528,8 @@ async function submitCodeStep(){
 
   $('#loginErrorCode').textContent = '';
   const btn = $('#codeSubmit');
-  const originalText = btn.textContent;
   btn.disabled = true;
-  btn.textContent = t('login.verifying');
+  const stopLoading = startLoadingIndicator(btn, 'login.verifying');
 
   try{
     const resp = await Api.verifyCodeEmail(pendingEmail, code);
@@ -1512,8 +1542,8 @@ async function submitCodeStep(){
     setTimeout(() => codeInputs.forEach(i => i.classList.remove('err')), 400);
     $('#loginErrorCode').textContent = friendlyError(err);
   }finally{
+    stopLoading();
     btn.disabled = false;
-    btn.textContent = originalText;
   }
 }
 
