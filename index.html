@@ -1626,6 +1626,7 @@ const I18N = {
     'toast.networkError': 'Ошибка сети. Проверьте соединение с сервером.',
     'err.notDeployed': 'Сервер не знает этот запрос — вероятно, на нём старая версия кода.',
     'err.dbError': 'Ошибка базы данных',
+    'err.sessionGone': 'Сессия завершена — войдите заново',
     'err.dbReadonly': 'Сервер не может писать в базу данных',
     'err.dbBusy': 'База данных занята, попробуйте ещё раз',
     'err.serverDown': 'Сервер вернул ошибку {n}. Возможно, он не смог запуститься.',
@@ -1801,6 +1802,7 @@ const I18N = {
     'toast.networkError': 'Network error. Check the connection to the server.',
     'err.notDeployed': 'The server does not know this request — it is probably running old code.',
     'err.dbError': 'Database error',
+    'err.sessionGone': 'Session ended — please sign in again',
     'err.dbReadonly': 'The server cannot write to the database',
     'err.dbBusy': 'Database is busy, please try again',
     'err.serverDown': 'The server returned error {n}. It may have failed to start.',
@@ -1938,6 +1940,7 @@ let resendTimer = null;
 let resendSecondsLeft = 0;
 
 function toast(message, kind='ok'){
+  if(!message) return;          // пустой текст — сообщать не о чем
   const colors = {ok:'var(--emerald)', warn:'var(--amber)', err:'var(--red)'};
   const el = document.createElement('div');
   el.className = 'toast';
@@ -2129,6 +2132,39 @@ function quickAddChipsHtml(chips){
     return '';
   }).join('');
 }
+/* Сессия больше не действует — чистим локальное состояние и показываем вход.
+   Флаг нужен, чтобы несколько параллельных запросов не вызвали это дважды. */
+let sessionExpiredHandled = false;
+
+function handleSessionExpired(){
+  if(sessionExpiredHandled) return;
+  sessionExpiredHandled = true;
+
+  State.sessionToken = null;
+  localStorage.removeItem(TOKEN_KEY);
+  State.tasks = [];
+  State.categories = [];
+
+  $$('.modal-backdrop.show').forEach(m => m.classList.remove('show'));
+  const fo = $('#focusOverlay');
+  if(fo) fo.classList.remove('show');
+
+  toast(t('err.sessionGone'), 'err');
+  showLoginScreen();
+
+  // Внутри Telegram вход происходит сам — пробуем сразу, чтобы человеку
+  // не пришлось ничего нажимать.
+  if(isInTelegram){
+    setTimeout(async () => {
+      const ok = await tryTelegramAutoLogin();
+      if(ok){
+        sessionExpiredHandled = false;
+        try{ await loadUserAndData(); enterApp(); }catch(_e){}
+      }
+    }, 400);
+  }
+}
+
 async function api(path, {method='GET', body=null, auth=true, _retried=false} = {}){
   const headers = {'Content-Type': 'application/json'};
   if(auth && State.sessionToken) headers['Authorization'] = 'Bearer ' + State.sessionToken;
@@ -2146,6 +2182,15 @@ async function api(path, {method='GET', body=null, auth=true, _retried=false} = 
 
   let data = null;
   try{ data = await resp.json(); }catch(_e){ /* пустой ответ */ }
+
+  // Сессия перестала быть действительной: истекла, отозвана с другого
+  // устройства или база была пересоздана после сбоя диска. Раньше человек
+  // видел только тост и оставался на экране, где ничего не работает.
+  // Теперь сразу возвращаем на вход.
+  if(resp.status === 401 && auth && data && data.code === 'invalid_session'){
+    handleSessionExpired();
+    throw {status: 401, code: 'invalid_session', message: t('err.sessionGone'), handled: true};
+  }
 
   // Сервер сам догнал схему базы и просит повторить — делаем это молча,
   // человеку незачем видеть техническую заминку.
@@ -2207,6 +2252,7 @@ const ERROR_KEY_MAP = {
   too_many_attempts: 'login.errTooMany',
 };
 function friendlyError(err){
+  if(err && err.handled) return '';        // об этой ошибке уже сообщили
   if(err && err.network) return err.message;
   let base = (err && err.code && ERROR_KEY_MAP[err.code])
     ? t(ERROR_KEY_MAP[err.code])
@@ -2426,6 +2472,7 @@ function showSkeletons(){
 }
 
 function enterApp(){
+  sessionExpiredHandled = false;
   $('#loginScreen').classList.remove('show');
   $('#app').classList.add('ready');
   applyStartParam();
