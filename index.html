@@ -183,6 +183,156 @@ a{color:inherit;}
 @keyframes codeShake{20%{transform:translateX(-5px);} 40%{transform:translateX(5px);} 60%{transform:translateX(-4px);} 80%{transform:translateX(4px);} 100%{transform:translateX(0);}}
 .login-hint-num{color:var(--text-1); font-weight:600;}
 
+/* ---- 3D-планета с орбитами на экране входа ---- */
+.planet-stage{
+  position:relative; width:132px; height:132px; margin:4px auto 22px;
+  perspective:600px; transform-style:preserve-3d;
+}
+.planet-core{
+  position:absolute; top:50%; left:50%; width:56px; height:56px; margin:-28px;
+  border-radius:50%;
+  background:radial-gradient(circle at 32% 28%, #8fb4ff 0%, #4a63e8 42%, #1b1f5c 78%, #0a0c1f 100%);
+  box-shadow:0 0 34px 6px rgba(90,140,255,.42), inset -6px -8px 18px rgba(0,0,0,.6);
+  animation:planetBob 6s var(--ease-soft) infinite;
+}
+.planet-core::after{
+  content:''; position:absolute; inset:0; border-radius:50%;
+  background:radial-gradient(circle at 30% 26%, rgba(255,255,255,.55), transparent 42%);
+}
+.planet-ring{
+  position:absolute; inset:0; border-radius:50%;
+  border:1px solid rgba(140,170,255,.28);
+  transform-style:preserve-3d;
+}
+.planet-ring.r1{animation:ringSpin 9s linear infinite; border-top-color:rgba(90,200,250,.85);}
+.planet-ring.r2{inset:14px; animation:ringSpin 6.5s linear infinite reverse; border-top-color:rgba(255,180,84,.75);}
+.planet-ring.r3{inset:26px; animation:ringSpin 12s linear infinite; border-top-color:rgba(52,211,153,.7);}
+.planet-moon{
+  position:absolute; top:50%; left:50%; width:9px; height:9px; margin:-4.5px;
+  border-radius:50%; background:#eaf1ff;
+  box-shadow:0 0 12px 3px rgba(200,225,255,.75);
+  animation:moonOrbit 7s linear infinite;
+}
+@keyframes ringSpin{
+  from{transform:rotateX(72deg) rotateZ(0deg);}
+  to{transform:rotateX(72deg) rotateZ(360deg);}
+}
+@keyframes moonOrbit{
+  from{transform:rotate(0deg) translateX(58px) rotate(0deg);}
+  to{transform:rotate(360deg) translateX(58px) rotate(-360deg);}
+}
+@keyframes planetBob{
+  0%,100%{transform:translateY(0) scale(1);}
+  50%{transform:translateY(-5px) scale(1.03);}
+}
+
+.login-divider{display:flex; align-items:center; gap:10px; margin:18px 0 14px;}
+.login-divider::before, .login-divider::after{content:''; flex:1; height:1px; background:rgba(255,255,255,.08);}
+.login-divider span{font-size:var(--fs-xs); color:var(--text-3);}
+
+/* ---- Пробегающий блик по кнопке ---- */
+.btn.shine{position:relative; overflow:hidden;}
+.btn.shine::after{
+  content:''; position:absolute; top:0; bottom:0; width:42%;
+  background:linear-gradient(100deg, transparent, rgba(255,255,255,.32), transparent);
+  transform:skewX(-18deg);
+  animation:shineSweep 3.6s var(--ease-soft) infinite;
+}
+@keyframes shineSweep{
+  0%{left:-60%;} 55%{left:120%;} 100%{left:120%;}
+}
+
+/* ---- Объёмный наклон карточки задачи под курсором ---- */
+.tasks-grid{perspective:1100px;}
+.task-card{transform-style:preserve-3d; will-change:transform;}
+.task-card.tilting{transition:transform .09s linear, box-shadow var(--dur-fast) var(--ease);}
+
+/* ---- Вспышка при выполнении задачи ---- */
+.tc-check{position:relative;}
+.tc-check.burst::before{
+  content:''; position:absolute; inset:-4px; border-radius:12px;
+  border:2px solid var(--emerald);
+  animation:checkBurst .55s var(--ease) forwards;
+}
+@keyframes checkBurst{
+  0%{transform:scale(.7); opacity:.9;}
+  100%{transform:scale(2.1); opacity:0;}
+}
+
+/* ---- Пончик: мягкое появление ---- */
+.donut-center .n{transition:none;}
+.donut-svg-wrap{animation:donutIn .8s var(--ease-soft);}
+@keyframes donutIn{from{transform:scale(.9) rotate(-8deg); opacity:0;} to{transform:none; opacity:1;}}
+
+/* ============================================================
+   Свой выбор даты и времени (вместо системного календаря)
+============================================================ */
+.due-field{
+  display:flex; align-items:center; gap:9px; width:100%;
+  background:rgba(255,255,255,.045); border:1px solid var(--glass-border);
+  border-radius:11px; padding:11px 13px; font-size:var(--fs-base);
+  cursor:pointer; transition:border-color .2s, background .2s;
+  text-align:left;
+}
+.due-field:hover{background:rgba(255,255,255,.065);}
+.due-field.filled{border-color:rgba(140,160,255,.4);}
+.due-field svg{width:15px; height:15px; color:var(--text-3); flex:0 0 auto;}
+.due-field .due-text{flex:1; color:var(--text-1);}
+.due-field .due-text.empty{color:var(--text-3);}
+.due-field .due-clear{color:var(--text-3); width:20px; height:20px; display:flex; align-items:center; justify-content:center; border-radius:6px; flex:0 0 auto;}
+.due-field .due-clear:hover{color:var(--red); background:rgba(255,93,93,.12);}
+
+.due-panel{
+  margin-top:9px; padding:13px; border-radius:16px;
+  background:rgba(255,255,255,.035); border:1px solid var(--glass-border);
+  animation:duePanelIn .28s var(--ease-soft);
+}
+@keyframes duePanelIn{from{opacity:0; transform:translateY(-6px);} to{opacity:1; transform:none;}}
+.due-panel[hidden]{display:none;}
+
+.due-chips{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:13px;}
+.due-chip{
+  padding:7px 11px; border-radius:20px; font-size:var(--fs-sm);
+  background:rgba(255,255,255,.05); border:1px solid var(--glass-border);
+  color:var(--text-2); transition:all .18s var(--ease);
+}
+.due-chip:hover{background:rgba(255,255,255,.1); color:var(--text-1);}
+.due-chip.on{background:linear-gradient(180deg,#6f8cff,#4a63e8); border-color:transparent; color:#fff;}
+
+.due-cal-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:9px;}
+.due-cal-head .m{font-size:var(--fs-base); font-weight:600; font-family:'Space Grotesk',sans-serif;}
+.due-cal-nav{display:flex; gap:4px;}
+.due-cal-nav button{
+  width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center;
+  color:var(--text-2); background:rgba(255,255,255,.05); transition:all .18s var(--ease);
+}
+.due-cal-nav button:hover{background:rgba(255,255,255,.11); color:var(--text-1);}
+.due-cal-nav svg{width:13px; height:13px;}
+
+.due-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:3px;}
+.due-dow{
+  font-size:9.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--text-3);
+  text-align:center; padding:3px 0 5px; font-weight:600;
+}
+.due-day{
+  aspect-ratio:1; display:flex; align-items:center; justify-content:center;
+  border-radius:9px; font-size:var(--fs-sm); color:var(--text-2);
+  transition:all .15s var(--ease);
+}
+.due-day:hover:not(.muted){background:rgba(255,255,255,.09); color:var(--text-1);}
+.due-day.muted{color:var(--text-3); opacity:.35;}
+.due-day.today{box-shadow:0 0 0 1px rgba(90,200,250,.5) inset; color:var(--sky);}
+.due-day.on{background:linear-gradient(160deg,#7d93ff,#4a63e8); color:#fff; font-weight:600; box-shadow:0 4px 14px -4px rgba(74,99,232,.8);}
+
+.due-time-row{display:flex; align-items:center; gap:6px; margin-top:13px; padding-top:12px; border-top:1px solid rgba(255,255,255,.06); flex-wrap:wrap;}
+.due-time-row .lbl{font-size:var(--fs-xs); color:var(--text-3); text-transform:uppercase; letter-spacing:.06em; font-weight:600; width:100%; margin-bottom:2px;}
+.due-time-input{
+  width:82px; background:rgba(255,255,255,.05); border:1px solid var(--glass-border);
+  border-radius:9px; padding:7px 9px; font-size:var(--fs-sm); color:var(--text-1);
+  outline:none; font-variant-numeric:tabular-nums;
+}
+.due-time-input:focus{border-color:rgba(140,160,255,.5);}
+
 .btn.tg{
   background:linear-gradient(180deg,#3aa9e8,#2481cc);
   border-color:rgba(90,180,240,.5);
@@ -635,50 +785,33 @@ a{color:inherit;}
   </div>
 
   <div class="login-card">
-    <!-- Step 1: email -->
-    <div class="login-step active" id="loginStepEmail">
-      <img class="login-glyph" src="icon-round-192.png" alt="Orbit">
-      <div class="login-title display" data-i18n="login.title">Добро пожаловать в Orbit!</div>
-      <div class="login-sub" data-i18n="login.subEmail">Введите email, чтобы войти или создать аккаунт.</div>
-      <div class="login-error" id="loginErrorEmail"></div>
-      <input class="text-input" id="emailInput" data-i18n-ph="login.emailPh" placeholder="you@example.com" type="email" autocomplete="email" style="margin-bottom:16px; text-align:center;">
-      <button class="btn primary block" id="emailSubmit" data-i18n="login.getCode" disabled>Получить код</button>
-
-      <div style="display:flex; align-items:center; gap:10px; margin:18px 0 14px;">
-        <div style="flex:1; height:1px; background:rgba(255,255,255,.08);"></div>
-        <span style="font-size:11px; color:var(--text-3);" data-i18n="login.or">или</span>
-        <div style="flex:1; height:1px; background:rgba(255,255,255,.08);"></div>
+    <div class="login-step active" id="loginStepMain">
+      <!-- Живая 3D-планета с орбитами вместо статичной иконки -->
+      <div class="planet-stage">
+        <div class="planet-core"></div>
+        <div class="planet-ring r1"></div>
+        <div class="planet-ring r2"></div>
+        <div class="planet-ring r3"></div>
+        <div class="planet-moon"></div>
       </div>
 
-      <button class="btn tg block" id="tgLoginBtn">
+      <div class="login-title display" data-i18n="login.title">Добро пожаловать в Orbit!</div>
+      <div class="login-sub" data-i18n="login.subTg">Войдите через Telegram — быстро, без паролей и кодов.</div>
+
+      <button class="btn tg block shine" id="tgLoginBtn">
         <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M21.9 4.3l-3.1 14.6c-.2 1-.9 1.3-1.7.8l-4.7-3.5-2.3 2.2c-.3.3-.5.5-1 .5l.3-4.8 8.8-8c.4-.3-.1-.5-.6-.2L6.7 12.6l-4.7-1.5c-1-.3-1-1 .2-1.5l18.4-7.1c.9-.3 1.6.2 1.3 1.8z"/></svg>
         <span id="tgLoginLabel">Войти через Telegram</span>
       </button>
       <div class="tg-login-note" id="tgLoginNote"></div>
 
-      <button class="btn ghost block" id="guestLoginBtn" data-i18n="login.guestBtn" style="margin-top:10px;">Продолжить как гость</button>
+      <div class="login-divider">
+        <span data-i18n="login.or">или</span>
+      </div>
+
+      <button class="btn ghost block" id="guestLoginBtn" data-i18n="login.guestBtn">Продолжить как гость</button>
       <div class="phone-hint" style="text-align:center; margin-top:10px;" data-i18n="login.guestWarning">
         Гостевой доступ привязан только к этому браузеру. Если очистите данные браузера или зайдёте с другого устройства — все ваши задачи будут потеряны безвозвратно.
       </div>
-    </div>
-
-    <!-- Step 2: код подтверждения -->
-    <div class="login-step" id="loginStepCode">
-      <button class="login-back" id="codeBackBtn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
-      <img class="login-glyph" src="icon-round-192.png" alt="Orbit">
-      <div class="login-title display" data-i18n="login.codeTitle">Введите код</div>
-      <div class="login-sub"><span data-i18n="login.codeSubPrefixEmail">Мы отправили 4-значный код на</span> <span class="login-hint-num" id="codeTargetNumber"></span></div>
-      <div class="login-error" id="loginErrorCode"></div>
-      <div class="code-inputs" id="codeInputs">
-        <input maxlength="1" inputmode="numeric" autocomplete="off">
-        <input maxlength="1" inputmode="numeric" autocomplete="off">
-        <input maxlength="1" inputmode="numeric" autocomplete="off">
-        <input maxlength="1" inputmode="numeric" autocomplete="off">
-      </div>
-      <button class="btn primary block" id="codeSubmit" data-i18n="login.verify">Подтвердить</button>
-      <span class="login-hint">
-        <button class="login-resend" id="resendBtn" type="button" data-i18n="login.resend">Отправить код ещё раз</button>
-      </span>
     </div>
   </div>
 </div>
@@ -772,10 +905,29 @@ a{color:inherit;}
     <div class="form-row"><label data-i18n="task.name">Название</label><input class="text-input" id="tmText" data-i18n-ph="task.namePh" placeholder="Например, «Подготовить презентацию»" maxlength="200"></div>
     <div class="form-row"><label data-i18n="task.category">Категория</label><select class="select-field" id="tmCategory"></select></div>
     <div class="form-row"><label data-i18n="task.dueDate">Дедлайн</label>
-      <div style="display:flex; gap:8px;">
-        <input type="date" class="text-input" id="tmDueDate" style="flex:1;">
-        <input type="time" class="text-input" id="tmDueTime" style="flex:0 0 110px;">
-        <button class="btn ghost icon" id="tmDueClear" type="button" title="Убрать дедлайн"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+      <button class="due-field" id="dueField" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 10h18M8 2v4M16 2v4"/></svg>
+        <span class="due-text empty" id="dueText">Без дедлайна</span>
+        <span class="due-clear" id="dueClear" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></span>
+      </button>
+      <div class="due-panel" id="duePanel" hidden>
+        <div class="due-chips" id="dueChips"></div>
+        <div class="due-cal-head">
+          <span class="m" id="dueCalMonth"></span>
+          <span class="due-cal-nav">
+            <button type="button" id="dueCalPrev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 18l-6-6 6-6"/></svg></button>
+            <button type="button" id="dueCalNext"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 6l6 6-6 6"/></svg></button>
+          </span>
+        </div>
+        <div class="due-grid" id="dueGrid"></div>
+        <div class="due-time-row">
+          <span class="lbl" data-i18n="due.timeLabel">Время</span>
+          <input class="due-time-input" id="dueTimeInput" type="text" inputmode="numeric" placeholder="--:--" maxlength="5">
+          <button class="due-chip" type="button" data-time="09:00">09:00</button>
+          <button class="due-chip" type="button" data-time="12:00">12:00</button>
+          <button class="due-chip" type="button" data-time="18:00">18:00</button>
+          <button class="due-chip" type="button" data-time="21:00">21:00</button>
+        </div>
       </div>
     </div>
     <div class="form-row"><label data-i18n="task.priority">Приоритет</label>
@@ -877,6 +1029,7 @@ const I18N = {
     'login.emailPh': 'you@example.com',
     'login.or': 'или',
     'login.guestBtn': 'Продолжить как гость',
+    'login.subTg': 'Войдите через Telegram — быстро, без паролей и кодов.',
     'login.tgBtn': 'Войти через Telegram',
     'login.tgOpening': 'Открываем Telegram…',
     'login.tgWaiting': 'Ждём подтверждения в Telegram. Нажмите «Start» в чате с ботом и вернитесь сюда.',
@@ -925,6 +1078,14 @@ const I18N = {
     'task.category': 'Категория',
     'task.dueDate': 'Дедлайн',
     'task.dueClear': 'Без дедлайна',
+    'due.none': 'Без дедлайна',
+    'due.timeLabel': 'Время',
+    'due.today': 'Сегодня',
+    'due.tomorrow': 'Завтра',
+    'due.weekend': 'В выходные',
+    'due.nextWeek': 'Через неделю',
+    'due.clear': 'Убрать',
+    'due.at': 'в',
     'task.overdue': 'Просрочено',
     'task.dueToday': 'Сегодня',
     'task.dueTomorrow': 'Завтра',
@@ -999,6 +1160,7 @@ const I18N = {
     'login.emailPh': 'you@example.com',
     'login.or': 'or',
     'login.guestBtn': 'Continue as guest',
+    'login.subTg': 'Sign in with Telegram — fast, no passwords or codes.',
     'login.tgBtn': 'Sign in with Telegram',
     'login.tgOpening': 'Opening Telegram…',
     'login.tgWaiting': 'Waiting for confirmation. Tap "Start" in the bot chat, then come back here.',
@@ -1047,6 +1209,14 @@ const I18N = {
     'task.category': 'Category',
     'task.dueDate': 'Due date',
     'task.dueClear': 'No due date',
+    'due.none': 'No due date',
+    'due.timeLabel': 'Time',
+    'due.today': 'Today',
+    'due.tomorrow': 'Tomorrow',
+    'due.weekend': 'This weekend',
+    'due.nextWeek': 'Next week',
+    'due.clear': 'Clear',
+    'due.at': 'at',
     'task.overdue': 'Overdue',
     'task.dueToday': 'Today',
     'task.dueTomorrow': 'Tomorrow',
@@ -1194,9 +1364,24 @@ function toastAction(message, actionLabel, onAction){
   setTimeout(dismiss, 5000);
 }
 
+/* Сервер пишет время через datetime.utcnow() — то есть UTC, но БЕЗ пометки
+   часового пояса: "2026-08-07T09:00:29.122451". Браузер по стандарту читает
+   такую строку как МЕСТНОЕ время, поэтому в Бишкеке (UTC+6) свежая задача
+   показывалась как «6 ч назад». Здесь дописываем 'Z', если пояса нет.
+   ВАЖНО: применять только к серверным меткам (created_at, last_seen_at).
+   Поле due_date человек вводит сам в местном времени — его трогать нельзя. */
+function parseServerTime(iso){
+  if(!iso) return null;
+  const hasZone = /[Zz]$/.test(iso) || /[+-]\d{2}:?\d{2}$/.test(iso);
+  const d = new Date(hasZone ? iso : iso + 'Z');
+  return isNaN(d.getTime()) ? null : d;
+}
+
 function timeAgo(iso){
   if(!iso) return '';
-  const diffSec = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000));
+  const d = parseServerTime(iso);
+  if(!d) return '';
+  const diffSec = Math.max(0, Math.floor((Date.now() - d.getTime()) / 1000));
   if(diffSec < 60) return t('time.now');
   if(diffSec < 3600) return t('time.minAgo', {n: Math.floor(diffSec/60)});
   if(diffSec < 86400) return t('time.hAgo', {n: Math.floor(diffSec/3600)});
@@ -1674,12 +1859,6 @@ function enterApp(){
 --------------------------------------------------------------------------- */
 const EMAIL_RE_FRONT = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
-function updateEmailValidityUI(){
-  const val = $('#emailInput').value.trim();
-  const submitBtn = $('#emailSubmit');
-  submitBtn.disabled = !EMAIL_RE_FRONT.test(val);
-}
-
 /* ---------------------------------------------------------------------------
    6. Флоу входа: email -> код -> сессия; либо гостевой вход
 --------------------------------------------------------------------------- */
@@ -1712,36 +1891,6 @@ function startLoadingIndicator(btn, initialTextKey){
   };
 }
 
-async function submitEmailStep(){
-  const email = $('#emailInput').value.trim();
-  if(!EMAIL_RE_FRONT.test(email)){
-    $('#loginErrorEmail').textContent = t('login.errEmail');
-    return;
-  }
-
-  $('#loginErrorEmail').textContent = '';
-  const btn = $('#emailSubmit');
-  btn.disabled = true;
-  const stopLoading = startLoadingIndicator(btn);
-
-  try{
-    await Api.requestCodeEmail(email);
-    pendingEmail = email;
-    $('#codeTargetNumber').textContent = email;
-    $('#loginStepEmail').classList.remove('active');
-    $('#loginStepCode').classList.add('active');
-    $$('#codeInputs input').forEach(i => i.value = '');
-    setTimeout(() => $('#codeInputs input')[0].focus(), 80);
-    startResendCooldown(45);
-  }catch(err){
-    $('#loginErrorEmail').textContent = friendlyError(err);
-  }finally{
-    stopLoading();
-    btn.disabled = false;
-    updateEmailValidityUI();
-  }
-}
-
 async function submitGuestLogin(){
   const btn = $('#guestLoginBtn');
   btn.disabled = true;
@@ -1753,66 +1902,7 @@ async function submitGuestLogin(){
     await loadUserAndData();
     enterApp();
   }catch(err){
-    $('#loginErrorEmail').textContent = friendlyError(err);
-  }finally{
-    stopLoading();
-    btn.disabled = false;
-  }
-}
-
-function startResendCooldown(seconds){
-  resendSecondsLeft = seconds;
-  const resendBtn = $('#resendBtn');
-  resendBtn.disabled = true;
-  clearInterval(resendTimer);
-  const tick = () => {
-    if(resendSecondsLeft <= 0){
-      clearInterval(resendTimer);
-      resendBtn.disabled = false;
-      resendBtn.textContent = t('login.resend');
-      return;
-    }
-    resendBtn.textContent = t('login.resendIn', {n: resendSecondsLeft});
-    resendSecondsLeft--;
-  };
-  tick();
-  resendTimer = setInterval(tick, 1000);
-}
-
-async function resendCode(){
-  if(!pendingEmail) return;
-  try{
-    await Api.requestCodeEmail(pendingEmail);
-    toast(t('login.sending'), 'ok');
-    startResendCooldown(45);
-  }catch(err){
-    $('#loginErrorCode').textContent = friendlyError(err);
-  }
-}
-
-async function submitCodeStep(){
-  const codeInputs = $$('#codeInputs input');
-  const code = codeInputs.map(i => i.value).join('');
-  if(code.length !== 4){
-    codeInputs.forEach(i => i.classList.add('err'));
-    return;
-  }
-
-  $('#loginErrorCode').textContent = '';
-  const btn = $('#codeSubmit');
-  btn.disabled = true;
-  const stopLoading = startLoadingIndicator(btn, 'login.verifying');
-
-  try{
-    const resp = await Api.verifyCodeEmail(pendingEmail, code);
-    State.sessionToken = resp.session_token;
-    localStorage.setItem(TOKEN_KEY, State.sessionToken);
-    await loadUserAndData();
-    enterApp();
-  }catch(err){
-    codeInputs.forEach(i => i.classList.add('err'));
-    setTimeout(() => codeInputs.forEach(i => i.classList.remove('err')), 400);
-    $('#loginErrorCode').textContent = friendlyError(err);
+    $('#tgLoginNote').textContent = friendlyError(err);
   }finally{
     stopLoading();
     btn.disabled = false;
@@ -2092,12 +2182,42 @@ function renderTasksGrid(container){
         <span class="tc-del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0l-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6h16z"/></svg></span>
       </div>
     `;
-    $('.tc-check', card).onclick = (e) => { e.stopPropagation(); haptic(tk.completed ? 'light' : 'success'); toggleTaskDone(tk); };
+    $('.tc-check', card).onclick = (e) => {
+      e.stopPropagation();
+      haptic(tk.completed ? 'light' : 'success');
+      if(!tk.completed){
+        const chk = e.currentTarget;
+        chk.classList.add('burst');
+        setTimeout(() => chk.classList.remove('burst'), 600);
+      }
+      toggleTaskDone(tk);
+    };
     $('.tc-fav', card).onclick = (e) => { e.stopPropagation(); haptic('light'); toggleTaskFav(tk); };
     $('.tc-del', card).onclick = (e) => { e.stopPropagation(); haptic('warning'); deleteTaskWithUndo(tk); };
     card.onclick = () => { if(card.dataset.justSwiped === '1') return; openTaskModal(tk); };
     wireCardSwipe(card, tk);
+    wireCardTilt(card);
     container.appendChild(card);
+  });
+}
+
+/* ---- Объёмный наклон карточки вслед за курсором (только мышь) ---- */
+function wireCardTilt(card){
+  if(window.matchMedia('(hover: none)').matches) return;          // на тач-экранах не нужно
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  const MAX = 7;   // градусов
+  card.addEventListener('mousemove', (e) => {
+    const r = card.getBoundingClientRect();
+    const px = (e.clientX - r.left) / r.width  - 0.5;
+    const py = (e.clientY - r.top)  / r.height - 0.5;
+    card.classList.add('tilting');
+    card.style.transform =
+      `perspective(900px) rotateX(${(-py * MAX).toFixed(2)}deg) rotateY(${(px * MAX).toFixed(2)}deg) translateY(-3px) scale(1.015)`;
+  });
+  card.addEventListener('mouseleave', () => {
+    card.classList.remove('tilting');
+    card.style.transform = '';
   });
 }
 
@@ -2510,6 +2630,166 @@ function undoDelete(){
   toast(t('task.restored'), 'ok');
 }
 
+/* ===========================================================================
+   Свой выбор даты и времени.
+   Системный <input type="date"> открывал белый календарь браузера, который
+   выбивался из тёмной темы. Здесь — собственная панель: быстрые варианты,
+   сетка месяца и время. Значения живут в DueState и читаются при сохранении.
+=========================================================================== */
+const DueState = { date: null, time: null, calMonth: null };
+
+function pad2(n){ return String(n).padStart(2, '0'); }
+function ymd(d){ return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }
+
+function dueSet(dateStr, timeStr){
+  DueState.date = dateStr || null;
+  if(timeStr !== undefined) DueState.time = timeStr || null;
+  if(!DueState.date) DueState.time = null;
+  renderDueField();
+  renderDueCalendar();
+}
+
+function renderDueField(){
+  const txt = $('#dueText');
+  const clear = $('#dueClear');
+  const field = $('#dueField');
+  if(!txt) return;
+
+  if(!DueState.date){
+    txt.textContent = t('due.none');
+    txt.classList.add('empty');
+    field.classList.remove('filled');
+    clear.hidden = true;
+    return;
+  }
+
+  const [y, m, d] = DueState.date.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const diffDays = Math.round((dt - today) / 86400000);
+
+  let label;
+  if(diffDays === 0) label = t('due.today');
+  else if(diffDays === 1) label = t('due.tomorrow');
+  else label = dt.toLocaleDateString(currentLang === 'ru' ? 'ru-RU' : 'en-US',
+        {day:'numeric', month:'long', ...(dt.getFullYear() !== today.getFullYear() ? {year:'numeric'} : {})});
+
+  txt.textContent = DueState.time ? `${label} ${t('due.at')} ${DueState.time}` : label;
+  txt.classList.remove('empty');
+  field.classList.add('filled');
+  clear.hidden = false;
+}
+
+function renderDueChips(){
+  const wrap = $('#dueChips');
+  if(!wrap) return;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const mk = (days) => { const d = new Date(today); d.setDate(d.getDate() + days); return ymd(d); };
+
+  const saturdayIn = (6 - today.getDay() + 7) % 7 || 7;
+  const opts = [
+    {label: t('due.today'),    value: mk(0)},
+    {label: t('due.tomorrow'), value: mk(1)},
+    {label: t('due.weekend'),  value: mk(saturdayIn)},
+    {label: t('due.nextWeek'), value: mk(7)},
+  ];
+
+  wrap.innerHTML = opts.map(o =>
+    `<button class="due-chip${DueState.date === o.value ? ' on' : ''}" type="button" data-date="${o.value}">${escapeHtml(o.label)}</button>`
+  ).join('') + `<button class="due-chip" type="button" data-date="">${escapeHtml(t('due.clear'))}</button>`;
+
+  $$('.due-chip[data-date]', wrap).forEach(b => b.onclick = () => {
+    haptic('light');
+    dueSet(b.dataset.date || null);
+    renderDueChips();
+  });
+}
+
+function renderDueCalendar(){
+  const grid = $('#dueGrid');
+  if(!grid) return;
+
+  if(!DueState.calMonth){
+    const base = DueState.date ? new Date(DueState.date + 'T00:00:00') : new Date();
+    DueState.calMonth = new Date(base.getFullYear(), base.getMonth(), 1);
+  }
+  const month = DueState.calMonth;
+  $('#dueCalMonth').textContent = month.toLocaleDateString(
+    currentLang === 'ru' ? 'ru-RU' : 'en-US', {month:'long', year:'numeric'});
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const first = new Date(month.getFullYear(), month.getMonth(), 1);
+  const startOffset = (first.getDay() + 6) % 7;          // неделя с понедельника
+  const start = new Date(first); start.setDate(1 - startOffset);
+
+  let html = DOW_KEYS.map(k => `<div class="due-dow">${escapeHtml(t(k))}</div>`).join('');
+  for(let i = 0; i < 42; i++){
+    const d = new Date(start); d.setDate(start.getDate() + i);
+    const key = ymd(d);
+    const cls = ['due-day'];
+    if(d.getMonth() !== month.getMonth()) cls.push('muted');
+    if(d.getTime() === today.getTime()) cls.push('today');
+    if(key === DueState.date) cls.push('on');
+    html += `<button class="${cls.join(' ')}" type="button" data-d="${key}">${d.getDate()}</button>`;
+  }
+  grid.innerHTML = html;
+
+  $$('.due-day', grid).forEach(b => b.onclick = () => {
+    haptic('light');
+    dueSet(b.dataset.d);
+    renderDueChips();
+  });
+}
+
+function wireDuePicker(){
+  const field = $('#dueField');
+  const panel = $('#duePanel');
+  if(!field || field.dataset.wired === '1') return;
+  field.dataset.wired = '1';
+
+  field.onclick = (e) => {
+    if(e.target.closest('#dueClear')){
+      haptic('light');
+      dueSet(null, null);
+      renderDueChips();
+      return;
+    }
+    haptic('light');
+    panel.hidden = !panel.hidden;
+    if(!panel.hidden){ renderDueChips(); renderDueCalendar(); }
+  };
+
+  $('#dueCalPrev').onclick = () => {
+    DueState.calMonth = new Date(DueState.calMonth.getFullYear(), DueState.calMonth.getMonth() - 1, 1);
+    renderDueCalendar();
+  };
+  $('#dueCalNext').onclick = () => {
+    DueState.calMonth = new Date(DueState.calMonth.getFullYear(), DueState.calMonth.getMonth() + 1, 1);
+    renderDueCalendar();
+  };
+
+  const timeInput = $('#dueTimeInput');
+  timeInput.addEventListener('input', () => {
+    let v = timeInput.value.replace(/[^\d:]/g, '');
+    if(v.length === 2 && !v.includes(':')) v += ':';
+    timeInput.value = v.slice(0, 5);
+    if(/^\d{2}:\d{2}$/.test(timeInput.value)){
+      const [h, m] = timeInput.value.split(':').map(Number);
+      if(h < 24 && m < 60){
+        if(!DueState.date) dueSet(ymd(new Date()), timeInput.value);
+        else { DueState.time = timeInput.value; renderDueField(); }
+      }
+    }
+  });
+
+  $$('.due-time-row .due-chip[data-time]').forEach(b => b.onclick = () => {
+    haptic('light');
+    timeInput.value = b.dataset.time;
+    if(!DueState.date) dueSet(ymd(new Date()), b.dataset.time);
+    else { DueState.time = b.dataset.time; renderDueField(); }
+  });
+}
+
 let editingTaskId = null;
 function openTaskModal(task){
   editingTaskId = task ? task.id : null;
@@ -2518,14 +2798,20 @@ function openTaskModal(task){
   $('#tmDelete').style.display = task ? 'inline-flex' : 'none';
   $('#tmText').value = task ? task.text : '';
   fillCategorySelect($('#tmCategory'), task ? task.category_id : null);
+  // due_date человек задаёт в местном времени, поэтому разбираем строку
+  // напрямую, без new Date() — иначе снова уедет часовой пояс.
+  DueState.calMonth = null;
   if(task && task.due_date){
-    const d = new Date(task.due_date);
-    $('#tmDueDate').value = d.toISOString().slice(0,10);
-    $('#tmDueTime').value = task.due_date.length > 10 ? d.toTimeString().slice(0,5) : '';
+    DueState.date = task.due_date.slice(0, 10);
+    DueState.time = task.due_date.length > 10 ? task.due_date.slice(11, 16) : null;
   }else{
-    $('#tmDueDate').value = '';
-    $('#tmDueTime').value = '';
+    DueState.date = null;
+    DueState.time = null;
   }
+  wireDuePicker();
+  $('#duePanel').hidden = true;
+  $('#dueTimeInput').value = DueState.time || '';
+  renderDueField();
   const pr = task ? task.priority : 'medium';
   $$('#tmPriority button').forEach(b => b.classList.toggle('on', b.dataset.v === pr));
   $('#taskModal').classList.add('show');
@@ -2582,9 +2868,9 @@ async function saveTaskModal(){
   const catRaw = $('#tmCategory').value;
   const category_id = catRaw ? Number(catRaw) : null;
 
-  const dateVal = $('#tmDueDate').value;
-  const timeVal = $('#tmDueTime').value;
-  const due_date = dateVal ? (timeVal ? `${dateVal}T${timeVal}:00` : dateVal) : null;
+  const due_date = DueState.date
+    ? (DueState.time ? `${DueState.date}T${DueState.time}:00` : DueState.date)
+    : null;
 
   try{
     if(editingTaskId){
@@ -2672,28 +2958,9 @@ function handleConfirmOk(){
    11. Общая проводка событий
 --------------------------------------------------------------------------- */
 function wireStaticEvents(){
-  $('#emailSubmit').onclick = submitEmailStep;
-  $('#emailInput').addEventListener('input', updateEmailValidityUI);
-  $('#emailInput').addEventListener('keydown', e => { if(e.key === 'Enter') submitEmailStep(); });
-  $('#guestLoginBtn').onclick = submitGuestLogin;
   $('#tgLoginBtn').onclick = () => { haptic('light'); loginViaTelegramBot(); };
   $('#tgLoginLabel').textContent = t('login.tgBtn');
-  $('#codeBackBtn').onclick = () => { $('#loginStepCode').classList.remove('active'); $('#loginStepEmail').classList.add('active'); setTimeout(() => $('#emailInput').focus(), 60); };
-  $('#resendBtn').onclick = resendCode;
-
-  const codeInputs = $$('#codeInputs input');
-  codeInputs.forEach((inp, idx) => {
-    inp.addEventListener('input', () => {
-      inp.value = inp.value.replace(/\D/g, '').slice(0, 1);
-      if(inp.value && idx < codeInputs.length - 1) codeInputs[idx + 1].focus();
-      if(codeInputs.every(i => i.value)) submitCodeStep();
-    });
-    inp.addEventListener('keydown', e => {
-      if(e.key === 'Backspace' && !inp.value && idx > 0) codeInputs[idx - 1].focus();
-      if(e.key === 'Enter') submitCodeStep();
-    });
-  });
-  $('#codeSubmit').onclick = submitCodeStep;
+  $('#guestLoginBtn').onclick = () => { haptic('light'); submitGuestLogin(); };
 
   $$('.lang-switch').forEach(sw => { $$('button', sw).forEach(b => b.onclick = () => setLang(b.dataset.lang)); });
 
@@ -2715,7 +2982,6 @@ function wireStaticEvents(){
   $('#btnNewTask').onclick = () => openTaskModal(null);
   $('#tmSave').onclick = saveTaskModal;
   $('#tmDelete').onclick = deleteFromModal;
-  $('#tmDueClear').onclick = () => { $('#tmDueDate').value = ''; $('#tmDueTime').value = ''; };
   $('#tmPriority').querySelectorAll('button').forEach(b => b.onclick = () => {
     $$('#tmPriority button').forEach(x => x.classList.remove('on'));
     b.classList.add('on');
