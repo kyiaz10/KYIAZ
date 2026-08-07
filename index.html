@@ -1509,6 +1509,9 @@ const I18N = {
     'sessions.empty': 'Активных сессий не найдено.',
     'sessions.loadError': 'Не удалось загрузить список сессий.',
     'toast.networkError': 'Ошибка сети. Проверьте соединение с сервером.',
+    'err.notDeployed': 'Сервер не знает этот запрос — вероятно, на нём старая версия кода.',
+    'err.serverDown': 'Сервер вернул ошибку {n}. Возможно, он не смог запуститься.',
+    'err.http': 'Сервер ответил кодом {n}.',
   },
   en: {
     'login.title': 'Welcome to Orbit!',
@@ -1670,6 +1673,9 @@ const I18N = {
     'sessions.empty': 'No active sessions found.',
     'sessions.loadError': 'Could not load the sessions list.',
     'toast.networkError': 'Network error. Check the connection to the server.',
+    'err.notDeployed': 'The server does not know this request — it is probably running old code.',
+    'err.serverDown': 'The server returned error {n}. It may have failed to start.',
+    'err.http': 'The server responded with code {n}.',
   }
 };
 
@@ -2007,8 +2013,16 @@ async function api(path, {method='GET', body=null, auth=true} = {}){
   try{ data = await resp.json(); }catch(_e){ /* пустой ответ */ }
 
   if(!resp.ok){
-    const err = (data && data.error) || 'Request failed';
-    const code = data && data.code;
+    // Если тело неJSON — значит сервер отдал HTML-страницу ошибки:
+    // либо эндпоинта нет (старая версия server.py), либо сервис упал.
+    // Показываем код ответа, иначе причину не найти.
+    let err = data && data.error;
+    let code = data && data.code;
+    if(!err){
+      if(resp.status === 404)      { err = t('err.notDeployed'); code = 'endpoint_missing'; }
+      else if(resp.status >= 500)  { err = t('err.serverDown', {n: resp.status}); code = 'server_error'; }
+      else                          { err = t('err.http', {n: resp.status}); code = 'http_error'; }
+    }
     throw {status: resp.status, code, message: err};
   }
   return data;
