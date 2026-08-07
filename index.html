@@ -131,7 +131,17 @@ a{color:inherit;}
   position:fixed; inset:0; z-index:8000; display:flex; align-items:center; justify-content:center;
   padding:20px; overflow-y:auto;
   opacity:0; pointer-events:none; transition:opacity .6s var(--ease-soft);
+  /* Фон здесь — космос, поэтому текст светлый независимо от выбранной темы */
+  --text-1:#f2f5fb; --text-2:#c2cbdd; --text-3:#98a2b8;
+  color:var(--text-1);
 }
+#loginScreen .feat-ic{background:rgba(255,255,255,.07); border-color:rgba(255,255,255,.12);}
+#loginScreen .login-divider::before,
+#loginScreen .login-divider::after{background:rgba(255,255,255,.14);}
+#loginScreen .btn.ghost{background:rgba(255,255,255,.06); border-color:rgba(255,255,255,.12);}
+#loginScreen .btn.ghost:hover{background:rgba(255,255,255,.11);}
+.intro-title{text-shadow:0 2px 30px rgba(0,0,0,.6);}
+.intro-lead{text-shadow:0 1px 16px rgba(0,0,0,.55);}
 .login-layout{
   position:relative; z-index:1;
   display:flex; align-items:center; gap:72px;
@@ -179,9 +189,13 @@ a{color:inherit;}
 .login-lang-switch{position:absolute; top:20px; right:20px; z-index:8001;}
 .login-card{position:relative; z-index:1; flex:0 0 auto;
   width:380px; max-width:100%; padding:28px 26px 24px; border-radius:var(--r-lg); text-align:center;
-  background:var(--bg-1);
-  border:1px solid var(--border-strong);
-  box-shadow:0 24px 70px -18px rgba(0,0,0,.7);
+  /* Единственное место, где размытие оправдано: за карточкой живая сцена,
+     и полная непрозрачность закрыла бы половину картинки. */
+  background:rgba(14,18,32,.62);
+  backdrop-filter:blur(22px) saturate(120%);
+  -webkit-backdrop-filter:blur(22px) saturate(120%);
+  border:1px solid rgba(255,255,255,.13);
+  box-shadow:0 24px 70px -18px rgba(0,0,0,.75), 0 1px 0 rgba(255,255,255,.07) inset;
 }
 .login-step{display:none;}
 .login-step.active{display:block; animation:loginStepIn .45s var(--ease-soft);}
@@ -2289,6 +2303,138 @@ function openLink(url){
   return true;
 }
 
+function boot(){
+  $('#loaderMark').innerHTML = 'ORBIT'.split('').map((ch,i)=>`<span style="animation-delay:${i*0.05}s">${ch}</span>`).join('');
+  applySettings();
+  wireStaticEvents();
+  applyI18n();
+  initTelegramEnvironment();
+  initStarfield();
+
+  const steps = ['loader.step1','loader.step2','loader.step3','loader.step4'];
+  let i = 0;
+  const stepEl = $('#loaderStatus');
+  const interval = setInterval(() => {
+    stepEl.textContent = t(steps[i % steps.length]);
+    i++;
+  }, 420);
+
+  setTimeout(async () => {
+    clearInterval(interval);
+    $('#loader').classList.add('hide');
+
+    // Внутри Telegram Mini App — пробуем войти автоматически, минуя экран
+    // с номером телефона: Telegram уже подтвердил личность пользователя.
+    if(!State.sessionToken && isInTelegram){
+      const ok = await tryTelegramAutoLogin();
+      if(!ok){
+        // Не получилось (например, сервер недоступен) — не блокируем человека,
+        // даём обычный вход по телефону как запасной вариант.
+      }
+    }
+
+    if(State.sessionToken){
+      // Каркас видно сразу — приложение не выглядит зависшим, пока
+      // просыпается сервер.
+      $('#app').classList.add('ready');
+      showSkeletons();
+      try{
+        await loadUserAndData();
+        enterApp();
+      }catch(_e){
+        State.sessionToken = null;
+        localStorage.removeItem(TOKEN_KEY);
+        showLoginScreen();
+      }
+    }else{
+      showLoginScreen();
+    }
+    State.booted = true;
+  }, isInTelegram ? 400 : 1500);
+}
+
+function showLoginScreen(){
+  $('#loginScreen').classList.add('show');
+  initPlanet();
+  initIntroText();
+
+  // Если мы внутри Telegram, но автовход не удался — объясняем почему,
+  // иначе человек видит кнопку «Войти через Telegram», которая внутри
+  // Telegram выглядит бессмысленно.
+  if(isInTelegram && tgLoginFailure){
+    const note = $('#tgLoginNote');
+    const reason = tgLoginFailure.code;
+    const HINTS = {
+      no_bot_token:  'На сервере не задан TELEGRAM_BOT_TOKEN.',
+      bad_signature: 'Токен бота на сервере не совпадает с ботом, через которого открыто приложение.',
+      expired:       'Данные устарели — закройте и откройте приложение заново.',
+    };
+    note.textContent = '⚠️ ' + (HINTS[reason] || tgLoginFailure.message || 'Не удалось войти автоматически.');
+    note.style.color = 'var(--amber)';
+
+    const label = $('#tgLoginLabel');
+    if(label) label.textContent = 'Повторить вход';
+    const sub = $('.login-sub');
+    if(sub) sub.textContent = 'Не получилось войти автоматически.';
+  }
+}
+
+async function loadUserAndData(){
+  const meResp = await Api.me();
+  State.user = meResp.user;
+  const [catsResp, tasksResp] = await Promise.all([Api.listCategories(), Api.listTasks()]);
+  State.categories = catsResp.categories || [];
+  State.tasks = tasksResp.tasks || [];
+}
+
+/* Глубокие ссылки: t.me/бот?startapp=week открывает сразу нужный раздел.
+   Telegram кладёт значение в start_param. В браузере — в #хэш адреса. */
+function applyStartParam(){
+  let param = '';
+  try{
+    param = (isInTelegram && TG.initDataUnsafe && TG.initDataUnsafe.start_param) || '';
+  }catch(_e){}
+  if(!param && location.hash) param = location.hash.slice(1);
+  if(!param) return;
+
+  if(param === 'week'){
+    UIState.viewMode = 'week';
+  }else if(param === 'today'){
+    UIState.todayOnly = true;
+  }else if(param === 'fav'){
+    UIState.favOnly = true;
+  }else if(param.startsWith('task_')){
+    const id = Number(param.slice(5));
+    const tk = State.tasks.find(x => x.id === id);
+    if(tk) setTimeout(() => openTaskModal(tk), 400);
+  }
+}
+
+function showSkeletons(){
+  const main = $('#mainView');
+  if(!main) return;
+  main.innerHTML = `
+    <div style="height:34px; width:180px; border-radius:8px; background:var(--bg-2); margin-bottom:22px;"></div>
+    <div class="tasks-grid">
+      ${Array.from({length: 6}).map(() => `
+        <div class="skel">
+          <div class="skel-line w70"></div>
+          <div class="skel-line w45"></div>
+          <div class="skel-line w30"></div>
+        </div>`).join('')}
+    </div>`;
+}
+
+function enterApp(){
+  $('#loginScreen').classList.remove('show');
+  $('#app').classList.add('ready');
+  applyStartParam();
+  const label = State.user ? (State.user.display_name || State.user.phone || State.user.email || ('#' + State.user.id)) : '—';
+  $('#userIdLabel').textContent = label;
+  renderPriorityFilters();
+  renderAll();
+}
+
 /* ---------------------------------------------------------------------------
    Вход через Telegram-бота в обычном браузере.
    Схема: просим у сервера одноразовую ссылку -> открываем чат с ботом ->
@@ -2539,191 +2685,206 @@ function initIntroText(){
 }
 
 /* ---------------------------------------------------------------------------
-   Звёздное небо на фоне экрана входа: медленно плывущие мерцающие точки.
-   Лёгкий canvas-эффект, останавливается сам, когда экран входа скрыт.
+   Космическая сцена на фоне экрана входа: Земля из иллюминатора.
+
+   Собрано из четырёх слоёв, как на настоящих снимках с орбиты:
+     1. глубокий космос — почти чёрный вверху, чуть синее к горизонту
+     2. звёзды в три слоя с разной глубиной, медленно вращаются вокруг
+        точки за горизонтом — так выглядит вращение самой станции
+     3. лимб Земли — тёмная дуга планеты внизу экрана
+     4. атмосфера над лимбом — та самая ярко-голубая полоса, и огни городов,
+        которые уплывают вбок вместе с вращением планеты
 --------------------------------------------------------------------------- */
 function initStarfield(){
   const canvas = $('#starfieldCanvas');
-  if(!canvas) return;
+  if(!canvas || !canvas.getContext) return;
   const ctx = canvas.getContext('2d');
-  let stars = [];
-  let w = 0, h = 0;
+  if(!ctx) return;
 
-  function resize(){
-    w = canvas.width = window.innerWidth;
-    h = canvas.height = window.innerHeight;
+  let w = 0, h = 0, dpr = 1;
+  let stars = [], cities = [];
+  let angle = 0;          // общий поворот сцены
+  let drift = 0;          // смещение огней вдоль лимба
+
+  // Центр вращения — далеко под экраном, в центре планеты. Поэтому звёзды
+  // движутся по широким пологим дугам, а не крутятся вокруг середины экрана.
+  function pivot(){ return {x: w * 0.5, y: h * 1.85}; }
+
+  function build(){
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    w = window.innerWidth;
+    h = window.innerHeight;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    // Три слоя глубины: дальние звёзды мелкие и тусклые, ближние крупнее
+    const total = Math.min(320, Math.floor((w * h) / 5200));
+    stars = [];
+    for(let i = 0; i < total; i++){
+      const depth = Math.random();
+      stars.push({
+        x: Math.random() * w,
+        y: Math.random() * h * 0.92,
+        r: 0.35 + depth * 1.3,
+        alpha: 0.2 + depth * 0.6,
+        speed: 0.25 + depth * 0.75,      // ближние смещаются заметнее
+        tw: Math.random() * Math.PI * 2,
+        twSpeed: 0.006 + Math.random() * 0.02,
+        warm: Math.random() < 0.12,      // немного тёплых звёзд для живости
+      });
+    }
+
+    // Огни городов вдоль лимба: скопления, а не равномерная сыпь
+    cities = [];
+    for(let c = 0; c < 26; c++){
+      const base = Math.random();
+      const size = 4 + Math.floor(Math.random() * 12);
+      for(let i = 0; i < size; i++){
+        cities.push({
+          t: base + (Math.random() - 0.5) * 0.045,   // положение вдоль дуги
+          off: Math.random() * 26,                    // отступ вглубь планеты
+          r: 0.5 + Math.random() * 1.1,
+          a: 0.35 + Math.random() * 0.6,
+          tw: Math.random() * Math.PI * 2,
+        });
+      }
+    }
   }
-  resize();
-  window.addEventListener('resize', resize);
 
-  const STAR_COUNT = Math.min(140, Math.floor((window.innerWidth * window.innerHeight) / 9000));
-  for(let i = 0; i < STAR_COUNT; i++){
-    stars.push({
-      x: Math.random() * w,
-      y: Math.random() * h,
-      r: Math.random() * 1.3 + 0.3,
-      baseAlpha: Math.random() * 0.5 + 0.25,
-      twinkleSpeed: Math.random() * 0.015 + 0.005,
-      twinklePhase: Math.random() * Math.PI * 2,
-      driftX: (Math.random() - 0.5) * 0.06,
-      driftY: (Math.random() - 0.5) * 0.06,
-    });
+  build();
+  window.addEventListener('resize', build);
+
+  // Геометрия лимба: огромная окружность, от которой виден только верхний край
+  function limb(){
+    return {cx: w * 0.5, cy: h * 1.85, R: h * 1.28};
   }
 
   function frame(){
-    if(!$('#loginScreen').classList.contains('show')){
+    if(!$('#loginScreen').classList.contains('show') || document.hidden){
       requestAnimationFrame(frame);
       return;
     }
-    ctx.clearRect(0, 0, w, h);
-    stars.forEach(s => {
-      s.twinklePhase += s.twinkleSpeed;
-      s.x += s.driftX;
-      s.y += s.driftY;
-      if(s.x < 0) s.x = w; if(s.x > w) s.x = 0;
-      if(s.y < 0) s.y = h; if(s.y > h) s.y = 0;
 
-      const alpha = s.baseAlpha * (0.6 + 0.4 * Math.sin(s.twinklePhase));
+    const L = limb();
+    const P = pivot();
+
+    // ---- 1. Космос ----
+    const space = ctx.createLinearGradient(0, 0, 0, h);
+    space.addColorStop(0,    '#01030a');
+    space.addColorStop(0.55, '#030718');
+    space.addColorStop(0.85, '#061027');
+    space.addColorStop(1,    '#0a1836');
+    ctx.fillStyle = space;
+    ctx.fillRect(0, 0, w, h);
+
+    // ---- 2. Звёзды ----
+    ctx.save();
+    ctx.translate(P.x, P.y);
+    ctx.rotate(angle);
+    ctx.translate(-P.x, -P.y);
+    stars.forEach(st => {
+      st.tw += st.twSpeed;
+      const a = st.alpha * (0.55 + 0.45 * Math.sin(st.tw));
       ctx.beginPath();
-      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(210, 225, 255, ${alpha.toFixed(3)})`;
+      ctx.arc(st.x, st.y, st.r, 0, Math.PI * 2);
+      ctx.fillStyle = st.warm
+        ? `rgba(255,228,190,${a.toFixed(3)})`
+        : `rgba(215,232,255,${a.toFixed(3)})`;
       ctx.fill();
+
+      // У крупных звёзд — лёгкий ореол, чтобы не выглядели плоскими точками
+      if(st.r > 1.2){
+        const g = ctx.createRadialGradient(st.x, st.y, 0, st.x, st.y, st.r * 4);
+        g.addColorStop(0, `rgba(200,225,255,${(a * 0.3).toFixed(3)})`);
+        g.addColorStop(1, 'rgba(200,225,255,0)');
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.arc(st.x, st.y, st.r * 4, 0, Math.PI * 2); ctx.fill();
+      }
     });
+    ctx.restore();
+
+    // ---- 3. Тело планеты ----
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(L.cx, L.cy, L.R, 0, Math.PI * 2);
+    ctx.clip();
+
+    const earth = ctx.createRadialGradient(
+      L.cx - L.R * 0.25, L.cy - L.R * 0.98, L.R * 0.05,
+      L.cx, L.cy, L.R
+    );
+    earth.addColorStop(0,    '#123a6b');
+    earth.addColorStop(0.06, '#0b2547');
+    earth.addColorStop(0.18, '#05132a');
+    earth.addColorStop(1,    '#01030a');
+    ctx.fillStyle = earth;
+    ctx.fillRect(0, L.cy - L.R, w, L.R);
+
+    // ---- 4. Огни городов ----
+    cities.forEach(c => {
+      c.tw += 0.012;
+      // Огни распределены по дуге и уплывают вбок — планета вращается
+      const t = ((c.t + drift) % 1 + 1) % 1;
+      const a0 = -Math.PI * 0.5 - 0.62 + t * 1.24;
+      const rr = L.R - c.off;
+      const x = L.cx + Math.cos(a0) * rr;
+      const y = L.cy + Math.sin(a0) * rr;
+      if(y > h + 10 || y < -10) return;
+
+      const a = c.a * (0.6 + 0.4 * Math.sin(c.tw));
+      const g = ctx.createRadialGradient(x, y, 0, x, y, c.r * 5);
+      g.addColorStop(0,   `rgba(255,196,110,${a.toFixed(3)})`);
+      g.addColorStop(0.4, `rgba(255,164,70,${(a * 0.32).toFixed(3)})`);
+      g.addColorStop(1,   'rgba(255,150,60,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(x, y, c.r * 5, 0, Math.PI * 2); ctx.fill();
+
+      ctx.fillStyle = `rgba(255,225,170,${Math.min(1, a * 1.3).toFixed(3)})`;
+      ctx.beginPath(); ctx.arc(x, y, c.r * 0.75, 0, Math.PI * 2); ctx.fill();
+    });
+    ctx.restore();
+
+    // ---- 5. Атмосфера: голубая полоса над горизонтом ----
+    // Три дуги разной толщины и яркости дают мягкий переход от белого
+    // свечения у самой поверхности к синему, растворяющемуся в космосе.
+    const layers = [
+      {off: 1,   width: 2.5, color: 'rgba(200,235,255,.85)'},
+      {off: 7,   width: 13,  color: 'rgba(90,175,255,.34)'},
+      {off: 26,  width: 42,  color: 'rgba(50,120,230,.14)'},
+      {off: 64,  width: 90,  color: 'rgba(30,80,190,.06)'},
+    ];
+    layers.forEach(l => {
+      ctx.beginPath();
+      ctx.arc(L.cx, L.cy, L.R + l.off, Math.PI * 1.18, Math.PI * 1.82);
+      ctx.strokeStyle = l.color;
+      ctx.lineWidth = l.width;
+      ctx.stroke();
+    });
+
+    // Яркое пятно свечения там, где над горизонтом восходит солнце
+    const dawn = ctx.createRadialGradient(
+      L.cx - w * 0.16, L.cy - L.R, 0,
+      L.cx - w * 0.16, L.cy - L.R, w * 0.5
+    );
+    dawn.addColorStop(0,   'rgba(160,215,255,.22)');
+    dawn.addColorStop(0.5, 'rgba(90,160,255,.07)');
+    dawn.addColorStop(1,   'rgba(60,120,220,0)');
+    ctx.fillStyle = dawn;
+    ctx.fillRect(0, 0, w, h);
+
+    // Скорость подобрана расчётом: 0.000249 рад/кадр при 60 к/с даёт полный
+    // оборот примерно за 7 минут. Заметно, если задержаться на экране
+    // на полминуты, но не отвлекает и не укачивает.
+    angle += 0.000249;
+    drift += 0.000040;
+
     requestAnimationFrame(frame);
   }
-  requestAnimationFrame(frame);
-}
 
-function boot(){
-  $('#loaderMark').innerHTML = 'ORBIT'.split('').map((ch,i)=>`<span style="animation-delay:${i*0.05}s">${ch}</span>`).join('');
-  applySettings();
-  wireStaticEvents();
-  applyI18n();
-  initTelegramEnvironment();
-  initStarfield();
-
-  const steps = ['loader.step1','loader.step2','loader.step3','loader.step4'];
-  let i = 0;
-  const stepEl = $('#loaderStatus');
-  const interval = setInterval(() => {
-    stepEl.textContent = t(steps[i % steps.length]);
-    i++;
-  }, 420);
-
-  setTimeout(async () => {
-    clearInterval(interval);
-    $('#loader').classList.add('hide');
-
-    // Внутри Telegram Mini App — пробуем войти автоматически, минуя экран
-    // с номером телефона: Telegram уже подтвердил личность пользователя.
-    if(!State.sessionToken && isInTelegram){
-      const ok = await tryTelegramAutoLogin();
-      if(!ok){
-        // Не получилось (например, сервер недоступен) — не блокируем человека,
-        // даём обычный вход по телефону как запасной вариант.
-      }
-    }
-
-    if(State.sessionToken){
-      // Каркас видно сразу — приложение не выглядит зависшим, пока
-      // просыпается сервер.
-      $('#app').classList.add('ready');
-      showSkeletons();
-      try{
-        await loadUserAndData();
-        enterApp();
-      }catch(_e){
-        State.sessionToken = null;
-        localStorage.removeItem(TOKEN_KEY);
-        showLoginScreen();
-      }
-    }else{
-      showLoginScreen();
-    }
-    State.booted = true;
-  }, isInTelegram ? 400 : 1500);
-}
-
-function showLoginScreen(){
-  $('#loginScreen').classList.add('show');
-  initPlanet();
-  initIntroText();
-
-  // Если мы внутри Telegram, но автовход не удался — объясняем почему,
-  // иначе человек видит кнопку «Войти через Telegram», которая внутри
-  // Telegram выглядит бессмысленно.
-  if(isInTelegram && tgLoginFailure){
-    const note = $('#tgLoginNote');
-    const reason = tgLoginFailure.code;
-    const HINTS = {
-      no_bot_token:  'На сервере не задан TELEGRAM_BOT_TOKEN.',
-      bad_signature: 'Токен бота на сервере не совпадает с ботом, через которого открыто приложение.',
-      expired:       'Данные устарели — закройте и откройте приложение заново.',
-    };
-    note.textContent = '⚠️ ' + (HINTS[reason] || tgLoginFailure.message || 'Не удалось войти автоматически.');
-    note.style.color = 'var(--amber)';
-
-    const label = $('#tgLoginLabel');
-    if(label) label.textContent = 'Повторить вход';
-    const sub = $('.login-sub');
-    if(sub) sub.textContent = 'Не получилось войти автоматически.';
-  }
-}
-
-async function loadUserAndData(){
-  const meResp = await Api.me();
-  State.user = meResp.user;
-  const [catsResp, tasksResp] = await Promise.all([Api.listCategories(), Api.listTasks()]);
-  State.categories = catsResp.categories || [];
-  State.tasks = tasksResp.tasks || [];
-}
-
-/* Глубокие ссылки: t.me/бот?startapp=week открывает сразу нужный раздел.
-   Telegram кладёт значение в start_param. В браузере — в #хэш адреса. */
-function applyStartParam(){
-  let param = '';
-  try{
-    param = (isInTelegram && TG.initDataUnsafe && TG.initDataUnsafe.start_param) || '';
-  }catch(_e){}
-  if(!param && location.hash) param = location.hash.slice(1);
-  if(!param) return;
-
-  if(param === 'week'){
-    UIState.viewMode = 'week';
-  }else if(param === 'today'){
-    UIState.todayOnly = true;
-  }else if(param === 'fav'){
-    UIState.favOnly = true;
-  }else if(param.startsWith('task_')){
-    const id = Number(param.slice(5));
-    const tk = State.tasks.find(x => x.id === id);
-    if(tk) setTimeout(() => openTaskModal(tk), 400);
-  }
-}
-
-function showSkeletons(){
-  const main = $('#mainView');
-  if(!main) return;
-  main.innerHTML = `
-    <div style="height:34px; width:180px; border-radius:8px; background:var(--bg-2); margin-bottom:22px;"></div>
-    <div class="tasks-grid">
-      ${Array.from({length: 6}).map(() => `
-        <div class="skel">
-          <div class="skel-line w70"></div>
-          <div class="skel-line w45"></div>
-          <div class="skel-line w30"></div>
-        </div>`).join('')}
-    </div>`;
-}
-
-function enterApp(){
-  $('#loginScreen').classList.remove('show');
-  $('#app').classList.add('ready');
-  applyStartParam();
-  const label = State.user ? (State.user.display_name || State.user.phone || State.user.email || ('#' + State.user.id)) : '—';
-  $('#userIdLabel').textContent = label;
-  renderPriorityFilters();
-  renderAll();
+  frame();
 }
 
 /* ---------------------------------------------------------------------------
@@ -3588,7 +3749,6 @@ function timelineBlock(tk){
   return el;
 }
 
-function addDays(d, n){ const x = new Date(d); x.setDate(x.getDate() + n); return x; }
 
 /* ---------------------------------------------------------------------------
    Недельный календарь (стиль Tweek): 7 дней + колонка "без даты",
@@ -3841,7 +4001,6 @@ function undoDelete(){
 =========================================================================== */
 const DueState = { date: null, time: null, calMonth: null };
 
-function pad2(n){ return String(n).padStart(2, '0'); }
 function ymd(d){ return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }
 
 function dueSet(dateStr, timeStr){
