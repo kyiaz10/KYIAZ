@@ -265,6 +265,215 @@ a{color:inherit;}
 @keyframes donutIn{from{transform:scale(.9) rotate(-8deg); opacity:0;} to{transform:none; opacity:1;}}
 
 /* ============================================================
+   Темы оформления. Всё держится на переменных из :root, поэтому
+   смена темы — это подмена нескольких значений, без перерисовки.
+============================================================ */
+html[data-theme="midnight"]{
+  --bg-0:#07070d; --violet:#2a2350;
+  --sky:#7aa2ff; --sky-glow:rgba(122,162,255,.4);
+}
+html[data-theme="ocean"]{
+  --bg-0:#04121c; --violet:#12405c;
+  --sky:#4fd1e0; --sky-glow:rgba(79,209,224,.4);
+  --emerald:#4ade80; --amber:#fbbf24;
+}
+html[data-theme="sunset"]{
+  --bg-0:#140a10; --violet:#4a1f3d;
+  --sky:#ff9e7d; --sky-glow:rgba(255,158,125,.4);
+  --amber:#ffc46b; --red:#ff6b8a;
+}
+html[data-theme="forest"]{
+  --bg-0:#060f0b; --violet:#1c4034;
+  --sky:#5eead4; --sky-glow:rgba(94,234,212,.4);
+  --emerald:#4ade80;
+}
+html[data-theme="mono"]{
+  --bg-0:#0a0a0a; --violet:#2a2a2a;
+  --sky:#d4d4d8; --sky-glow:rgba(212,212,216,.3);
+  --amber:#a1a1aa; --emerald:#e4e4e7; --red:#fafafa;
+}
+html[data-theme="light"]{
+  --bg-0:#f4f5f9;
+  --glass:rgba(10,12,25,.035); --glass-strong:rgba(10,12,25,.06);
+  --glass-border:rgba(10,12,25,.11);
+  --text-1:#12141d; --text-2:#4b5162; --text-3:#727a8f;
+  --violet:#c9cff0;
+}
+html[data-theme="light"] body{
+  background:
+    radial-gradient(ellipse 90% 60% at 15% -10%, #e6e2ff 0%, transparent 55%),
+    radial-gradient(ellipse 70% 50% at 100% 0%, #dcecff 0%, transparent 50%),
+    var(--bg-0);
+}
+html[data-theme="light"] .topbar,
+html[data-theme="light"] .bottom-nav{background:rgba(255,255,255,.72);}
+html[data-theme="light"] .sidebar-left{background:rgba(255,255,255,.5);}
+html[data-theme="light"] .modal-card,
+html[data-theme="light"] .login-card{
+  background:linear-gradient(165deg, rgba(255,255,255,.97), rgba(248,249,253,.98));
+}
+html[data-theme="light"] .toast{background:linear-gradient(160deg, #fff, #f4f5f9);}
+html[data-theme="light"] .select-field option{background:#fff; color:#12141d;}
+
+/* Акцентные цвета — влияют на основные кнопки и активные состояния */
+html[data-accent="violet"]{--acc-1:#7d93ff; --acc-2:#4a63e8;}
+html[data-accent="cyan"]  {--acc-1:#4fd1e0; --acc-2:#0e9bb5;}
+html[data-accent="green"] {--acc-1:#5ee9a8; --acc-2:#16a34a;}
+html[data-accent="orange"]{--acc-1:#ffb36b; --acc-2:#ea7317;}
+html[data-accent="pink"]  {--acc-1:#ff8fb8; --acc-2:#db2777;}
+:root{--acc-1:#7d93ff; --acc-2:#4a63e8;}
+
+.btn.primary{background:linear-gradient(180deg, var(--acc-1), var(--acc-2));
+  border-color:color-mix(in srgb, var(--acc-1) 60%, transparent);
+  box-shadow:0 1px 0 rgba(255,255,255,.25) inset, 0 8px 22px -8px color-mix(in srgb, var(--acc-2) 65%, transparent);}
+.fab{background:linear-gradient(160deg, var(--acc-1), var(--acc-2));
+  box-shadow:0 10px 30px -6px color-mix(in srgb, var(--acc-2) 70%, transparent), 0 1px 0 rgba(255,255,255,.3) inset;}
+.due-day.on{background:linear-gradient(160deg, var(--acc-1), var(--acc-2));}
+.due-chip.on{background:linear-gradient(180deg, var(--acc-1), var(--acc-2));}
+
+/* Плотность интерфейса */
+html[data-density="compact"] .task-card{padding:10px 12px 9px;}
+html[data-density="compact"] .tc-footer{display:none;}
+html[data-density="compact"] .tasks-grid{gap:8px;}
+html[data-density="compact"] .side-item{padding:6px 10px;}
+html[data-density="roomy"] .task-card{padding:18px 19px 17px;}
+html[data-density="roomy"] .tasks-grid{gap:18px;}
+
+/* Полное отключение анимаций по желанию человека */
+html[data-anim="off"] *{animation:none !important; transition:none !important;}
+html[data-anim="off"] .task-card{opacity:1 !important; transform:none !important;}
+
+/* ============================================================
+   Дневной таймлайн — главная идея Structured: день как отрезок
+   времени, а не как список. Видно дыры и перегруз.
+============================================================ */
+.tl-wrap{position:relative; margin-top:6px;}
+.tl-hour{display:flex; gap:12px; min-height:54px; position:relative;}
+.tl-hour-label{
+  flex:0 0 46px; font-size:var(--fs-xs); color:var(--text-3);
+  font-variant-numeric:tabular-nums; padding-top:2px; text-align:right;
+}
+.tl-hour-line{flex:1; border-top:1px solid rgba(255,255,255,.06); position:relative; padding:4px 0 8px;}
+html[data-theme="light"] .tl-hour-line{border-top-color:rgba(10,12,25,.09);}
+.tl-now{position:absolute; left:0; right:0; height:2px; background:var(--red); z-index:5;
+  box-shadow:0 0 10px 1px var(--red-glow); border-radius:2px;}
+.tl-now::before{content:''; position:absolute; left:-4px; top:-3px; width:8px; height:8px;
+  border-radius:50%; background:var(--red); box-shadow:0 0 10px 2px var(--red-glow);}
+.tl-block{
+  border-radius:11px; padding:8px 11px; margin-bottom:5px; cursor:pointer;
+  background:linear-gradient(150deg, rgba(255,255,255,.07), rgba(255,255,255,.02));
+  border:1px solid var(--glass-border); border-left:3px solid var(--pri-glow, var(--text-3));
+  transition:transform .18s var(--ease), box-shadow .18s var(--ease);
+}
+html[data-theme="light"] .tl-block{background:linear-gradient(150deg, rgba(255,255,255,.9), rgba(246,247,251,.95));}
+.tl-block:hover{transform:translateX(3px); box-shadow:0 10px 24px -14px rgba(0,0,0,.7);}
+.tl-block.pri-high{--pri-glow:var(--red);}
+.tl-block.pri-medium{--pri-glow:var(--amber);}
+.tl-block.pri-low{--pri-glow:var(--sky);}
+.tl-block.is-done{opacity:.5;}
+.tl-block.is-done .tl-title{text-decoration:line-through;}
+.tl-title{font-size:var(--fs-base); font-weight:600; display:flex; align-items:center; gap:6px;}
+.tl-meta{font-size:10.5px; color:var(--text-3); margin-top:3px; display:flex; gap:8px; flex-wrap:wrap;}
+.tl-free{font-size:10.5px; color:var(--text-3); opacity:.5; padding:2px 0;}
+.tl-load{
+  display:flex; align-items:center; gap:10px; margin-bottom:14px; padding:12px 15px;
+  border-radius:14px; background:var(--glass); border:1px solid var(--glass-border);
+  font-size:var(--fs-sm); color:var(--text-2); flex-wrap:wrap;
+}
+.tl-load b{color:var(--text-1);}
+.tl-bar{flex:1; min-width:120px; height:7px; border-radius:7px; background:rgba(255,255,255,.07); overflow:hidden;}
+.tl-bar i{display:block; height:100%; border-radius:7px;
+  background:linear-gradient(90deg, var(--acc-1), var(--acc-2)); transition:width .9s var(--ease-soft);}
+.tl-bar.over i{background:linear-gradient(90deg, var(--amber), var(--red));}
+
+/* ---- Подзадачи и заметка в модалке ---- */
+.sub-list{display:flex; flex-direction:column; gap:5px; margin-bottom:8px;}
+.sub-row{display:flex; align-items:center; gap:9px; padding:7px 10px; border-radius:10px;
+  background:rgba(255,255,255,.04); border:1px solid var(--glass-border);}
+.sub-check{width:17px; height:17px; border-radius:6px; border:1.5px solid rgba(255,255,255,.25);
+  flex:0 0 auto; display:flex; align-items:center; justify-content:center; transition:all .22s var(--ease);}
+.sub-check.on{background:linear-gradient(160deg,#6fe3b0,var(--emerald)); border-color:transparent;}
+.sub-check svg{width:10px; height:10px; color:#04241a; opacity:0; transform:scale(.5); transition:all .18s;}
+.sub-check.on svg{opacity:1; transform:scale(1);}
+.sub-row input{flex:1; background:transparent; border:none; outline:none; font-size:var(--fs-base); min-width:0;}
+.sub-row.done input{text-decoration:line-through; color:var(--text-3);}
+.sub-del{color:var(--text-3); width:20px; height:20px; display:flex; align-items:center; justify-content:center;
+  border-radius:6px; flex:0 0 auto;}
+.sub-del:hover{color:var(--red); background:rgba(255,93,93,.12);}
+.sub-del svg{width:11px; height:11px;}
+.sub-progress{font-size:var(--fs-xs); color:var(--text-3); margin-bottom:7px;}
+.tc-sub-badge{font-size:10px; color:var(--text-3); display:flex; align-items:center; gap:3px;}
+
+/* ---- Выбор иконки ---- */
+.icon-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(38px,1fr)); gap:5px;
+  max-height:132px; overflow-y:auto; padding:8px; border-radius:12px;
+  background:rgba(255,255,255,.03); border:1px solid var(--glass-border);}
+.icon-opt{aspect-ratio:1; display:flex; align-items:center; justify-content:center; font-size:19px;
+  border-radius:9px; transition:all .15s var(--ease);}
+.icon-opt:hover{background:rgba(255,255,255,.09); transform:scale(1.14);}
+.icon-opt.on{background:linear-gradient(160deg, var(--acc-1), var(--acc-2)); transform:scale(1.06);}
+
+/* ---- Настройки ---- */
+.set-group{margin-bottom:20px;}
+.set-label{font-size:var(--fs-xs); text-transform:uppercase; letter-spacing:.07em;
+  color:var(--text-3); margin-bottom:9px; font-weight:600;}
+.theme-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:8px;}
+.theme-card{padding:9px; border-radius:13px; border:1.5px solid var(--glass-border);
+  background:rgba(255,255,255,.03); transition:all .2s var(--ease); text-align:center;}
+.theme-card:hover{transform:translateY(-2px); border-color:rgba(255,255,255,.22);}
+.theme-card.on{border-color:var(--acc-1); box-shadow:0 0 0 3px color-mix(in srgb, var(--acc-1) 22%, transparent);}
+.theme-swatch{height:34px; border-radius:9px; margin-bottom:6px; position:relative; overflow:hidden;}
+.theme-swatch::after{content:''; position:absolute; right:6px; bottom:6px; width:11px; height:11px;
+  border-radius:50%; background:var(--sw-acc); box-shadow:0 0 8px 1px var(--sw-acc);}
+.theme-name{font-size:10.5px; color:var(--text-2);}
+.theme-card.on .theme-name{color:var(--text-1); font-weight:600;}
+.accent-row{display:flex; gap:9px; flex-wrap:wrap;}
+.accent-dot{width:32px; height:32px; border-radius:50%; border:2px solid transparent; transition:all .2s var(--ease);}
+.accent-dot:hover{transform:scale(1.13);}
+.accent-dot.on{border-color:var(--text-1); box-shadow:0 0 0 3px rgba(255,255,255,.12);}
+.set-toggle{display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding:11px 13px; border-radius:12px; background:rgba(255,255,255,.03);
+  border:1px solid var(--glass-border); margin-bottom:7px; cursor:pointer;}
+.set-toggle:hover{background:rgba(255,255,255,.055);}
+.set-toggle .txt{font-size:var(--fs-base); color:var(--text-1);}
+.set-toggle .sub{font-size:var(--fs-xs); color:var(--text-3); margin-top:2px;}
+.switch{width:42px; height:24px; border-radius:20px; background:rgba(255,255,255,.12);
+  flex:0 0 auto; position:relative; transition:background .25s var(--ease);}
+.switch::after{content:''; position:absolute; top:3px; left:3px; width:18px; height:18px;
+  border-radius:50%; background:#fff; transition:transform .28s var(--ease-soft);
+  box-shadow:0 2px 6px rgba(0,0,0,.35);}
+.switch.on{background:linear-gradient(90deg, var(--acc-1), var(--acc-2));}
+.switch.on::after{transform:translateX(18px);}
+
+/* ---- Таймер фокуса ---- */
+.focus-overlay{position:fixed; inset:0; z-index:400; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:22px; padding:24px;
+  background:rgba(4,4,9,.9); backdrop-filter:blur(22px); -webkit-backdrop-filter:blur(22px);
+  opacity:0; pointer-events:none; transition:opacity .45s var(--ease);}
+.focus-overlay.show{opacity:1; pointer-events:all;}
+html[data-theme="light"] .focus-overlay{background:rgba(244,245,249,.93);}
+.focus-ring{position:relative; width:246px; height:246px;}
+.focus-ring svg{width:100%; height:100%; transform:rotate(-90deg);}
+.focus-ring circle{fill:none; stroke-width:9; stroke-linecap:round;}
+.focus-ring .bg{stroke:rgba(255,255,255,.07);}
+.focus-ring .fg{stroke:var(--acc-1); transition:stroke-dashoffset 1s linear;
+  filter:drop-shadow(0 0 12px color-mix(in srgb, var(--acc-1) 60%, transparent));}
+.focus-center{position:absolute; inset:0; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:5px;}
+.focus-time{font-size:46px; font-weight:700; font-family:'Space Grotesk',sans-serif;
+  font-variant-numeric:tabular-nums;}
+.focus-phase{font-size:var(--fs-xs); text-transform:uppercase; letter-spacing:.1em; color:var(--text-3);}
+.focus-task{font-size:var(--fs-md); font-weight:600; text-align:center; max-width:320px;}
+.focus-actions{display:flex; gap:10px; flex-wrap:wrap; justify-content:center;}
+.focus-pulse{position:absolute; inset:-14px; border-radius:50%;
+  border:1px solid color-mix(in srgb, var(--acc-1) 40%, transparent);
+  animation:focusPulse 2.6s var(--ease-soft) infinite;}
+@keyframes focusPulse{
+  0%{transform:scale(.94); opacity:.75;}
+  100%{transform:scale(1.12); opacity:0;}
+}
+
+/* ============================================================
    Свой выбор даты и времени (вместо системного календаря)
 ============================================================ */
 .due-field{
@@ -829,6 +1038,9 @@ a{color:inherit;}
         <button data-lang="ru">RU</button>
         <button data-lang="en">EN</button>
       </div>
+      <button class="btn ghost icon" id="btnSettings" data-i18n-title="settings.title" title="Настройки">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.9l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.9-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1A1.7 1.7 0 008.9 19a1.7 1.7 0 00-1.9.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.9 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1A1.7 1.7 0 004.6 8.9a1.7 1.7 0 00-.3-1.9l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.9.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.9-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.9V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg>
+      </button>
       <button class="btn ghost icon" id="btnSessions" data-i18n-title="sessions.title" title="Активные сессии">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 21h8M12 18v3"/></svg>
       </button>
@@ -849,6 +1061,7 @@ a{color:inherit;}
         <div class="side-item active" id="allTasksNav"><span class="side-dot" style="background:#8b93ff;color:#8b93ff"></span><span data-i18n="nav.allTasks">Все задачи</span><span class="count" id="cntAll">0</span></div>
         <div class="side-item" id="todayNav"><span class="side-dot" style="background:#ff8fa3;color:#ff8fa3"></span><span data-i18n="nav.today">Сегодня</span><span class="count" id="cntToday">0</span></div>
         <div class="side-item" id="favNav"><span class="side-dot" style="background:#ffd166;color:#ffd166"></span><span data-i18n="nav.favorites">Избранное</span><span class="count" id="cntFav">0</span></div>
+      <div class="side-item" id="inboxNav"><span class="side-dot" style="background:#6ee7ff;color:#6ee7ff"></span><span data-i18n="nav.inbox">Входящие</span><span class="count" id="cntInbox">0</span></div>
       </div>
       <div>
         <div class="side-group-title" data-i18n="nav.priority">Приоритет</div>
@@ -859,7 +1072,8 @@ a{color:inherit;}
         <div id="categoryFilters"></div>
       </div>
       <div class="side-footer">
-        <div class="side-item" id="sessionsNavMobile"><span class="side-dot" style="background:#5ac8fa;color:#5ac8fa"></span><span data-i18n="sessions.title">Активные сессии</span></div>
+        <div class="side-item" id="settingsNavMobile"><span class="side-dot" style="background:#c084fc;color:#c084fc"></span><span data-i18n="settings.title">Настройки</span></div>
+      <div class="side-item" id="sessionsNavMobile"><span class="side-dot" style="background:#5ac8fa;color:#5ac8fa"></span><span data-i18n="sessions.title">Активные сессии</span></div>
       </div>
     </aside>
 
@@ -902,7 +1116,13 @@ a{color:inherit;}
     <div class="modal-title"><span id="taskModalTitle" data-i18n="task.newTitle">Новая задача</span>
       <button class="btn ghost icon" data-close><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
     </div>
-    <div class="form-row"><label data-i18n="task.name">Название</label><input class="text-input" id="tmText" data-i18n-ph="task.namePh" placeholder="Например, «Подготовить презентацию»" maxlength="200"></div>
+    <div class="form-row"><label data-i18n="task.name">Название</label>
+      <div style="display:flex; gap:8px;">
+        <button class="btn" id="tmIconBtn" type="button" style="flex:0 0 46px; justify-content:center; font-size:19px; padding:10px 0;">📌</button>
+        <input class="text-input" id="tmText" data-i18n-ph="task.namePh" placeholder="Например, «Подготовить презентацию»" maxlength="200" style="flex:1;">
+      </div>
+      <div class="icon-grid" id="tmIconGrid" hidden style="margin-top:8px;"></div>
+    </div>
     <div class="form-row"><label data-i18n="task.category">Категория</label><select class="select-field" id="tmCategory"></select></div>
     <div class="form-row"><label data-i18n="task.dueDate">Дедлайн</label>
       <button class="due-field" id="dueField" type="button">
@@ -930,6 +1150,18 @@ a{color:inherit;}
         </div>
       </div>
     </div>
+    <div class="form-row"><label data-i18n="task.duration">Длительность</label>
+      <div class="due-chips" id="tmDuration" style="margin-bottom:0;">
+        <button class="due-chip on" type="button" data-dur="0" data-i18n="task.noDuration">Без длительности</button>
+        <button class="due-chip" type="button" data-dur="15">15 мин</button>
+        <button class="due-chip" type="button" data-dur="30">30 мин</button>
+        <button class="due-chip" type="button" data-dur="60">1 ч</button>
+        <button class="due-chip" type="button" data-dur="90">1.5 ч</button>
+        <button class="due-chip" type="button" data-dur="120">2 ч</button>
+        <button class="due-chip" type="button" data-dur="240">4 ч</button>
+      </div>
+    </div>
+
     <div class="form-row"><label data-i18n="task.priority">Приоритет</label>
       <div class="segmented" id="tmPriority">
         <button data-v="low" class="on"><span class="d" style="background:var(--sky);color:var(--sky)"></span><span data-i18n="priority.low">Низкий</span></button>
@@ -937,8 +1169,19 @@ a{color:inherit;}
         <button data-v="high"><span class="d" style="background:var(--red);color:var(--red)"></span><span data-i18n="priority.high">Высокий</span></button>
       </div>
     </div>
+    <div class="form-row"><label data-i18n="task.notes">Заметка</label>
+      <textarea class="text-input" id="tmNotes" data-i18n-ph="task.notesPh" placeholder="Детали, ссылки, мысли…" rows="2" style="resize:vertical; min-height:44px;"></textarea>
+    </div>
+
+    <div class="form-row"><label><span data-i18n="task.subtasks">Подзадачи</span></label>
+      <div class="sub-progress" id="tmSubProgress" hidden></div>
+      <div class="sub-list" id="tmSubList"></div>
+      <input class="text-input" id="tmSubInput" data-i18n-ph="task.subtaskPh" placeholder="Добавить шаг и нажать Enter">
+    </div>
+
     <div class="modal-footer">
       <button class="btn danger push-left" id="tmDelete" style="display:none;" data-i18n="common.delete">Удалить</button>
+      <button class="btn" id="tmFocus" style="display:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg><span data-i18n="focus.start">Начать фокус</span></button>
       <button class="btn ghost" data-close data-i18n="common.cancel">Отмена</button>
       <button class="btn primary" id="tmSave" data-i18n="task.create">Создать задачу</button>
     </div>
@@ -968,6 +1211,89 @@ a{color:inherit;}
       <button class="btn ghost" data-close data-i18n="common.cancel">Отмена</button>
       <button class="btn danger" id="confirmOk" data-i18n="common.delete">Удалить</button>
     </div>
+  </div>
+</div>
+
+<!-- ============ Настройки оформления ============ -->
+<div class="modal-backdrop" id="settingsModal">
+  <div class="modal-card" style="width:460px;">
+    <div class="modal-title"><span data-i18n="settings.title">Настройки</span>
+      <button class="btn ghost icon" data-close><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </div>
+
+    <div class="set-group">
+      <div class="set-label" data-i18n="settings.theme">Тема оформления</div>
+      <div class="theme-grid" id="themeGrid"></div>
+    </div>
+
+    <div class="set-group">
+      <div class="set-label" data-i18n="settings.accent">Акцентный цвет</div>
+      <div class="accent-row" id="accentRow"></div>
+    </div>
+
+    <div class="set-group">
+      <div class="set-label" data-i18n="settings.density">Плотность</div>
+      <div class="segmented" id="densitySeg">
+        <button data-v="compact" data-i18n="settings.compact">Плотно</button>
+        <button data-v="normal" class="on" data-i18n="settings.normal">Обычно</button>
+        <button data-v="roomy" data-i18n="settings.roomy">Свободно</button>
+      </div>
+    </div>
+
+    <div class="set-group">
+      <div class="set-label" data-i18n="settings.behaviour">Поведение</div>
+      <div class="set-toggle" data-set="anim">
+        <div><div class="txt" data-i18n="settings.anim">Анимации</div>
+             <div class="sub" data-i18n="settings.animSub">Плавные переходы и эффекты</div></div>
+        <div class="switch on"></div>
+      </div>
+      <div class="set-toggle" data-set="haptic">
+        <div><div class="txt" data-i18n="settings.haptic">Тактильный отклик</div>
+             <div class="sub" data-i18n="settings.hapticSub">Вибрация при действиях</div></div>
+        <div class="switch on"></div>
+      </div>
+      <div class="set-toggle" data-set="confirmDelete">
+        <div><div class="txt" data-i18n="settings.confirmDel">Спрашивать при удалении</div>
+             <div class="sub" data-i18n="settings.confirmDelSub">Иначе можно отменить из уведомления</div></div>
+        <div class="switch"></div>
+      </div>
+    </div>
+
+    <div class="set-group" style="margin-bottom:8px;">
+      <div class="set-label" data-i18n="settings.dayRange">Рабочий день</div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <input class="due-time-input" id="setDayStart" type="text" inputmode="numeric" maxlength="5" placeholder="08:00" style="width:88px;">
+        <span style="color:var(--text-3);">—</span>
+        <input class="due-time-input" id="setDayEnd" type="text" inputmode="numeric" maxlength="5" placeholder="22:00" style="width:88px;">
+        <span style="font-size:var(--fs-xs); color:var(--text-3);" data-i18n="settings.dayRangeSub">границы таймлайна</span>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn ghost push-left" id="setReset" data-i18n="settings.reset">Сбросить</button>
+      <button class="btn primary" data-close data-i18n="common.close">Закрыть</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Таймер фокуса ============ -->
+<div class="focus-overlay" id="focusOverlay">
+  <div class="focus-task" id="focusTask"></div>
+  <div class="focus-ring">
+    <div class="focus-pulse"></div>
+    <svg viewBox="0 0 240 240">
+      <circle class="bg" cx="120" cy="120" r="108"></circle>
+      <circle class="fg" id="focusArc" cx="120" cy="120" r="108"></circle>
+    </svg>
+    <div class="focus-center">
+      <div class="focus-time" id="focusTime">25:00</div>
+      <div class="focus-phase" id="focusPhase" data-i18n="focus.work">Фокус</div>
+    </div>
+  </div>
+  <div class="focus-actions">
+    <button class="btn" id="focusToggle" data-i18n="focus.pause">Пауза</button>
+    <button class="btn primary" id="focusDone" data-i18n="focus.finish">Завершить задачу</button>
+    <button class="btn ghost" id="focusClose" data-i18n="common.close">Закрыть</button>
   </div>
 </div>
 
@@ -1057,6 +1383,36 @@ const I18N = {
     'nav.allTasks': 'Все задачи',
     'nav.today': 'Сегодня',
     'nav.favorites': 'Избранное',
+    'nav.inbox': 'Входящие',
+    'view.timelineMode': 'День',
+    'settings.title': 'Настройки',
+    'settings.theme': 'Тема оформления',
+    'settings.accent': 'Акцентный цвет',
+    'settings.density': 'Плотность',
+    'settings.compact': 'Плотно', 'settings.normal': 'Обычно', 'settings.roomy': 'Свободно',
+    'settings.behaviour': 'Поведение',
+    'settings.anim': 'Анимации', 'settings.animSub': 'Плавные переходы и эффекты',
+    'settings.haptic': 'Тактильный отклик', 'settings.hapticSub': 'Вибрация при действиях',
+    'settings.confirmDel': 'Спрашивать при удалении', 'settings.confirmDelSub': 'Иначе можно отменить из уведомления',
+    'settings.dayRange': 'Рабочий день', 'settings.dayRangeSub': 'границы таймлайна',
+    'settings.reset': 'Сбросить', 'settings.saved': 'Настройки сохранены',
+    'theme.cosmos': 'Космос', 'theme.midnight': 'Полночь', 'theme.ocean': 'Океан',
+    'theme.sunset': 'Закат', 'theme.forest': 'Лес', 'theme.mono': 'Графит', 'theme.light': 'Светлая',
+    'task.notes': 'Заметка', 'task.notesPh': 'Детали, ссылки, мысли…',
+    'task.duration': 'Длительность', 'task.icon': 'Иконка',
+    'task.subtasks': 'Подзадачи', 'task.subtaskPh': 'Добавить шаг и нажать Enter',
+    'task.noDuration': 'Без длительности',
+    'inbox.title': 'Входящие',
+    'inbox.sub': 'Задачи без даты — разберите их позже',
+    'inbox.empty': 'Пусто. Всё разложено по датам 🌿',
+    'timeline.load': 'Загрузка дня',
+    'timeline.free': 'свободно',
+    'timeline.overbooked': 'День перегружен',
+    'timeline.now': 'сейчас',
+    'timeline.noTasks': 'На этот день ничего не запланировано.',
+    'focus.title': 'Фокус', 'focus.work': 'Фокус', 'focus.break': 'Перерыв',
+    'focus.pause': 'Пауза', 'focus.resume': 'Продолжить', 'focus.finish': 'Завершить задачу',
+    'focus.start': 'Начать фокус', 'focus.done': 'Сессия завершена',
     'nav.priority': 'Приоритет',
     'nav.categories': 'Категории',
     'nav.logout': 'Выйти',
@@ -1188,6 +1544,36 @@ const I18N = {
     'nav.allTasks': 'All tasks',
     'nav.today': 'Today',
     'nav.favorites': 'Favorites',
+    'nav.inbox': 'Inbox',
+    'view.timelineMode': 'Day',
+    'settings.title': 'Settings',
+    'settings.theme': 'Theme',
+    'settings.accent': 'Accent color',
+    'settings.density': 'Density',
+    'settings.compact': 'Compact', 'settings.normal': 'Normal', 'settings.roomy': 'Roomy',
+    'settings.behaviour': 'Behaviour',
+    'settings.anim': 'Animations', 'settings.animSub': 'Smooth transitions and effects',
+    'settings.haptic': 'Haptic feedback', 'settings.hapticSub': 'Vibration on actions',
+    'settings.confirmDel': 'Confirm before deleting', 'settings.confirmDelSub': 'Otherwise you can undo from the toast',
+    'settings.dayRange': 'Working hours', 'settings.dayRangeSub': 'timeline bounds',
+    'settings.reset': 'Reset', 'settings.saved': 'Settings saved',
+    'theme.cosmos': 'Cosmos', 'theme.midnight': 'Midnight', 'theme.ocean': 'Ocean',
+    'theme.sunset': 'Sunset', 'theme.forest': 'Forest', 'theme.mono': 'Graphite', 'theme.light': 'Light',
+    'task.notes': 'Notes', 'task.notesPh': 'Details, links, thoughts…',
+    'task.duration': 'Duration', 'task.icon': 'Icon',
+    'task.subtasks': 'Subtasks', 'task.subtaskPh': 'Add a step and press Enter',
+    'task.noDuration': 'No duration',
+    'inbox.title': 'Inbox',
+    'inbox.sub': 'Tasks without a date — sort them later',
+    'inbox.empty': 'Empty. Everything is scheduled 🌿',
+    'timeline.load': 'Day load',
+    'timeline.free': 'free',
+    'timeline.overbooked': 'Day is overbooked',
+    'timeline.now': 'now',
+    'timeline.noTasks': 'Nothing scheduled for this day.',
+    'focus.title': 'Focus', 'focus.work': 'Focus', 'focus.break': 'Break',
+    'focus.pause': 'Pause', 'focus.resume': 'Resume', 'focus.finish': 'Finish task',
+    'focus.start': 'Start focus', 'focus.done': 'Session complete',
     'nav.priority': 'Priority',
     'nav.categories': 'Categories',
     'nav.logout': 'Log out',
@@ -1311,6 +1697,75 @@ function setLang(lang){
 }
 
 /* ---------------------------------------------------------------------------
+   1.5. Настройки оформления
+   Хранятся локально: это личные предпочтения устройства, а не данные аккаунта,
+   поэтому сервер о них знать не обязан и работают они мгновенно, без сети.
+--------------------------------------------------------------------------- */
+const SETTINGS_KEY = STORAGE_PREFIX + 'settings';
+
+const THEMES = [
+  {id:'cosmos',   nameKey:'theme.cosmos',   bg:'linear-gradient(150deg,#1c1440,#05060a)', acc:'#7d93ff'},
+  {id:'midnight', nameKey:'theme.midnight', bg:'linear-gradient(150deg,#2a2350,#07070d)', acc:'#7aa2ff'},
+  {id:'ocean',    nameKey:'theme.ocean',    bg:'linear-gradient(150deg,#12405c,#04121c)', acc:'#4fd1e0'},
+  {id:'sunset',   nameKey:'theme.sunset',   bg:'linear-gradient(150deg,#4a1f3d,#140a10)', acc:'#ff9e7d'},
+  {id:'forest',   nameKey:'theme.forest',   bg:'linear-gradient(150deg,#1c4034,#060f0b)', acc:'#5eead4'},
+  {id:'mono',     nameKey:'theme.mono',     bg:'linear-gradient(150deg,#2a2a2a,#0a0a0a)', acc:'#d4d4d8'},
+  {id:'light',    nameKey:'theme.light',    bg:'linear-gradient(150deg,#e6e2ff,#f4f5f9)', acc:'#4a63e8'},
+];
+
+const ACCENTS = [
+  {id:'violet', c:'#7d93ff'}, {id:'cyan', c:'#4fd1e0'}, {id:'green', c:'#5ee9a8'},
+  {id:'orange', c:'#ffb36b'}, {id:'pink', c:'#ff8fb8'},
+];
+
+const DEFAULT_SETTINGS = {
+  theme:'cosmos', accent:'violet', density:'normal',
+  anim:true, haptic:true, confirmDelete:false,
+  dayStart:'08:00', dayEnd:'22:00',
+};
+
+let Settings = (() => {
+  try{
+    return Object.assign({}, DEFAULT_SETTINGS, JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}'));
+  }catch(_e){ return Object.assign({}, DEFAULT_SETTINGS); }
+})();
+
+function applySettings(){
+  const r = document.documentElement;
+  r.dataset.theme = Settings.theme;
+  r.dataset.accent = Settings.accent;
+  r.dataset.density = Settings.density;
+  r.dataset.anim = Settings.anim ? 'on' : 'off';
+
+  // Цвет системной шапки в Telegram и вкладки браузера
+  const bg = Settings.theme === 'light' ? '#f4f5f9' : '#05060a';
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if(meta) meta.content = bg;
+  try{
+    if(isInTelegram && TG.setHeaderColor){ TG.setHeaderColor(bg); TG.setBackgroundColor(bg); }
+  }catch(_e){}
+}
+
+function saveSettings(){
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(Settings));
+  applySettings();
+}
+
+function setSetting(key, value){
+  Settings[key] = value;
+  saveSettings();
+}
+
+/* Минуты от начала суток из строки «08:30» */
+function hhmmToMin(str, fallback){
+  const m = /^(\d{1,2}):(\d{2})$/.exec((str || '').trim());
+  if(!m) return fallback;
+  const h = Number(m[1]), mi = Number(m[2]);
+  if(h > 23 || mi > 59) return fallback;
+  return h * 60 + mi;
+}
+
+/* ---------------------------------------------------------------------------
    2. Утилиты DOM / состояние
 --------------------------------------------------------------------------- */
 const $  = (sel, root=document) => root.querySelector(sel);
@@ -1331,7 +1786,9 @@ const UIState = {
   todayOnly: false,
   search: '',
   sidebarOpen: false,
-  viewMode: 'list', // 'list' | 'week'
+  viewMode: 'list', // 'list' | 'week' | 'timeline'
+  inboxOnly: false, // «Входящие» — задачи без даты
+  timelineDay: null, // какой день показан в дневном таймлайне
   weekStart: null,  // Date — понедельник текущей отображаемой недели, ставится при первом рендере
 };
 
@@ -1576,6 +2033,9 @@ const Api = {
   createTask:  (payload)        => api('/api/tasks', {method:'POST', body:payload}),
   updateTask:  (id, payload)    => api(`/api/tasks/${id}`, {method:'PATCH', body:payload}),
   deleteTask:  (id)             => api(`/api/tasks/${id}`, {method:'DELETE'}),
+  createSubtask:(taskId, text)  => api(`/api/tasks/${taskId}/subtasks`, {method:'POST', body:{text}}),
+  updateSubtask:(id, payload)   => api(`/api/subtasks/${id}`, {method:'PATCH', body:payload}),
+  deleteSubtask:(id)            => api(`/api/subtasks/${id}`, {method:'DELETE'}),
 };
 
 /* Единая обработка ошибок API -> текст на нужном языке */
@@ -1605,6 +2065,7 @@ const isInTelegram = !!(TG && TG.initData);
 /* Тактильный отклик. Внутри Telegram — нативный, в браузере — вибрация,
    если устройство её поддерживает. Молча ничего не делает, если нельзя. */
 function haptic(kind){
+  if(typeof Settings !== 'undefined' && !Settings.haptic) return;
   try{
     if(isInTelegram && TG.HapticFeedback){
       if(kind === 'success' || kind === 'error' || kind === 'warning'){
@@ -1642,16 +2103,40 @@ function initTelegramEnvironment(){
   }catch(_e){ /* Telegram SDK недоступен по какой-то причине — просто продолжаем как обычный сайт */ }
 }
 
+let tgLoginFailure = null;   // причина отказа, чтобы показать её человеку
+
 async function tryTelegramAutoLogin(){
   if(!isInTelegram) return false;
   try{
     const resp = await Api.telegramLogin(TG.initData);
     State.sessionToken = resp.session_token;
     localStorage.setItem(TOKEN_KEY, State.sessionToken);
+    tgLoginFailure = null;
     return true;
-  }catch(_err){
+  }catch(err){
+    // Раньше ошибка молча проглатывалась, и человек застревал на экране
+    // входа без единой подсказки. Теперь причина видна.
+    tgLoginFailure = err && (err.message || err.code) ? err : {message: 'Сервер недоступен'};
+    console.warn('Telegram auto-login failed:', err);
     return false;
   }
+}
+
+/* Открыть ссылку правильным способом: внутри Telegram — через его API,
+   иначе window.open (который в Mini App часто блокируется). */
+function openLink(url){
+  try{
+    if(isInTelegram && TG.openTelegramLink && /^https:\/\/t\.me\//.test(url)){
+      TG.openTelegramLink(url);
+      return true;
+    }
+    if(isInTelegram && TG.openLink){
+      TG.openLink(url);
+      return true;
+    }
+  }catch(_e){}
+  window.open(url, '_blank', 'noopener');
+  return true;
 }
 
 /* ---------------------------------------------------------------------------
@@ -1667,6 +2152,24 @@ async function loginViaTelegramBot(){
   const note = $('#tgLoginNote');
   const label = $('#tgLoginLabel');
   const originalLabel = label.textContent;
+
+  // Внутри Telegram открывать ссылку на бота бессмысленно — мы уже в нём.
+  // Просто пробуем автовход ещё раз.
+  if(isInTelegram){
+    btn.disabled = true;
+    label.textContent = t('login.verifying');
+    note.textContent = '';
+    const ok = await tryTelegramAutoLogin();
+    if(ok){
+      haptic('success');
+      try{ await loadUserAndData(); enterApp(); }catch(_e){ location.reload(); }
+      return;
+    }
+    btn.disabled = false;
+    label.textContent = originalLabel;
+    showLoginScreen();
+    return;
+  }
 
   btn.disabled = true;
   label.textContent = t('login.tgOpening');
@@ -1686,7 +2189,7 @@ async function loginViaTelegramBot(){
 
   // Открываем чат с ботом. window.open до await уже отработал бы как попап-блок,
   // поэтому открываем сразу после получения ссылки — это всё ещё жест пользователя.
-  window.open(start.deep_link, '_blank', 'noopener');
+  openLink(start.deep_link);
 
   note.innerHTML = escapeHtml(t('login.tgWaiting')) + '<br>' +
     t('login.tgManual', {link: escapeHtml(start.deep_link)});
@@ -1790,6 +2293,7 @@ function initStarfield(){
 
 function boot(){
   $('#loaderMark').innerHTML = 'ORBIT'.split('').map((ch,i)=>`<span style="animation-delay:${i*0.05}s">${ch}</span>`).join('');
+  applySettings();
   wireStaticEvents();
   applyI18n();
   initTelegramEnvironment();
@@ -1835,6 +2339,26 @@ function boot(){
 
 function showLoginScreen(){
   $('#loginScreen').classList.add('show');
+
+  // Если мы внутри Telegram, но автовход не удался — объясняем почему,
+  // иначе человек видит кнопку «Войти через Telegram», которая внутри
+  // Telegram выглядит бессмысленно.
+  if(isInTelegram && tgLoginFailure){
+    const note = $('#tgLoginNote');
+    const reason = tgLoginFailure.code;
+    const HINTS = {
+      no_bot_token:  'На сервере не задан TELEGRAM_BOT_TOKEN.',
+      bad_signature: 'Токен бота на сервере не совпадает с ботом, через которого открыто приложение.',
+      expired:       'Данные устарели — закройте и откройте приложение заново.',
+    };
+    note.textContent = '⚠️ ' + (HINTS[reason] || tgLoginFailure.message || 'Не удалось войти автоматически.');
+    note.style.color = 'var(--amber)';
+
+    const label = $('#tgLoginLabel');
+    if(label) label.textContent = 'Повторить вход';
+    const sub = $('.login-sub');
+    if(sub) sub.textContent = 'Не получилось войти автоматически.';
+  }
 }
 
 async function loadUserAndData(){
@@ -1845,9 +2369,33 @@ async function loadUserAndData(){
   State.tasks = tasksResp.tasks || [];
 }
 
+/* Глубокие ссылки: t.me/бот?startapp=week открывает сразу нужный раздел.
+   Telegram кладёт значение в start_param. В браузере — в #хэш адреса. */
+function applyStartParam(){
+  let param = '';
+  try{
+    param = (isInTelegram && TG.initDataUnsafe && TG.initDataUnsafe.start_param) || '';
+  }catch(_e){}
+  if(!param && location.hash) param = location.hash.slice(1);
+  if(!param) return;
+
+  if(param === 'week'){
+    UIState.viewMode = 'week';
+  }else if(param === 'today'){
+    UIState.todayOnly = true;
+  }else if(param === 'fav'){
+    UIState.favOnly = true;
+  }else if(param.startsWith('task_')){
+    const id = Number(param.slice(5));
+    const tk = State.tasks.find(x => x.id === id);
+    if(tk) setTimeout(() => openTaskModal(tk), 400);
+  }
+}
+
 function enterApp(){
   $('#loginScreen').classList.remove('show');
   $('#app').classList.add('ready');
+  applyStartParam();
   const label = State.user ? (State.user.display_name || State.user.phone || State.user.email || ('#' + State.user.id)) : '—';
   $('#userIdLabel').textContent = label;
   renderPriorityFilters();
@@ -1916,6 +2464,162 @@ function logout(){
   localStorage.removeItem(TOKEN_KEY);
   $('#app').classList.remove('ready');
   location.reload();
+}
+
+/* ---------------------------------------------------------------------------
+   6.4. Таймер фокуса (Pomodoro)
+   Задачу мало отметить — над ней надо поработать. 25 минут работы, 5 отдыха.
+--------------------------------------------------------------------------- */
+const Focus = {
+  taskId: null, phase: 'work', left: 25 * 60, total: 25 * 60,
+  running: false, timerId: null,
+};
+const FOCUS_WORK = 25 * 60;
+const FOCUS_BREAK = 5 * 60;
+const ARC_LEN = 2 * Math.PI * 108;
+
+function openFocus(task){
+  Focus.taskId = task ? task.id : null;
+  Focus.phase = 'work';
+  // Если у задачи есть длительность — берём её, но не больше часа за подход
+  Focus.total = task && task.duration_min ? Math.min(task.duration_min, 60) * 60 : FOCUS_WORK;
+  Focus.left = Focus.total;
+  Focus.running = true;
+
+  $('#focusTask').textContent = task ? ((task.icon ? task.icon + ' ' : '') + task.text) : t('focus.title');
+  $('#focusArc').style.strokeDasharray = ARC_LEN;
+  $('#focusOverlay').classList.add('show');
+  $('#focusToggle').textContent = t('focus.pause');
+  renderFocus();
+  startFocusTick();
+  haptic('light');
+}
+
+function closeFocus(){
+  Focus.running = false;
+  clearInterval(Focus.timerId);
+  Focus.timerId = null;
+  $('#focusOverlay').classList.remove('show');
+}
+
+function renderFocus(){
+  const m = Math.floor(Focus.left / 60), sec = Focus.left % 60;
+  $('#focusTime').textContent = `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+  $('#focusPhase').textContent = t(Focus.phase === 'work' ? 'focus.work' : 'focus.break');
+  const done = 1 - (Focus.left / Focus.total);
+  $('#focusArc').style.strokeDashoffset = ARC_LEN * done;
+}
+
+function startFocusTick(){
+  clearInterval(Focus.timerId);
+  Focus.timerId = setInterval(() => {
+    if(!Focus.running) return;
+    Focus.left--;
+    if(Focus.left <= 0){
+      haptic('success');
+      if(Focus.phase === 'work'){
+        Focus.phase = 'break';
+        Focus.total = FOCUS_BREAK;
+        Focus.left = FOCUS_BREAK;
+        toast(t('focus.done'), 'ok');
+      }else{
+        Focus.phase = 'work';
+        Focus.total = FOCUS_WORK;
+        Focus.left = FOCUS_WORK;
+      }
+    }
+    renderFocus();
+  }, 1000);
+}
+
+function wireFocus(){
+  $('#focusToggle').onclick = () => {
+    Focus.running = !Focus.running;
+    $('#focusToggle').textContent = t(Focus.running ? 'focus.pause' : 'focus.resume');
+    haptic('light');
+  };
+  $('#focusClose').onclick = () => { haptic('light'); closeFocus(); };
+  $('#focusDone').onclick = () => {
+    const tk = State.tasks.find(x => x.id === Focus.taskId);
+    closeFocus();
+    if(tk && !tk.completed) toggleTaskDone(tk);
+  };
+}
+
+/* ---------------------------------------------------------------------------
+   6.5. Экран настроек оформления
+--------------------------------------------------------------------------- */
+function openSettingsModal(){
+  renderSettingsModal();
+  $('#settingsModal').classList.add('show');
+}
+
+function renderSettingsModal(){
+  const grid = $('#themeGrid');
+  grid.innerHTML = THEMES.map(th => `
+    <button class="theme-card${Settings.theme === th.id ? ' on' : ''}" data-theme="${th.id}">
+      <div class="theme-swatch" style="background:${th.bg}; --sw-acc:${th.acc};"></div>
+      <div class="theme-name">${escapeHtml(t(th.nameKey))}</div>
+    </button>`).join('');
+  $$('.theme-card', grid).forEach(b => b.onclick = () => {
+    haptic('light');
+    setSetting('theme', b.dataset.theme);
+    renderSettingsModal();
+  });
+
+  const acc = $('#accentRow');
+  acc.innerHTML = ACCENTS.map(a => `
+    <button class="accent-dot${Settings.accent === a.id ? ' on' : ''}" data-accent="${a.id}"
+            style="background:linear-gradient(160deg, ${a.c}, color-mix(in srgb, ${a.c} 55%, #000));"
+            aria-label="${a.id}"></button>`).join('');
+  $$('.accent-dot', acc).forEach(b => b.onclick = () => {
+    haptic('light');
+    setSetting('accent', b.dataset.accent);
+    renderSettingsModal();
+  });
+
+  $$('#densitySeg button').forEach(b => {
+    b.classList.toggle('on', b.dataset.v === Settings.density);
+    b.onclick = () => { haptic('light'); setSetting('density', b.dataset.v); renderSettingsModal(); renderAll(); };
+  });
+
+  $$('.set-toggle').forEach(row => {
+    const key = row.dataset.set;
+    $('.switch', row).classList.toggle('on', !!Settings[key]);
+    row.onclick = () => {
+      setSetting(key, !Settings[key]);
+      haptic('light');
+      $('.switch', row).classList.toggle('on', !!Settings[key]);
+    };
+  });
+
+  $('#setDayStart').value = Settings.dayStart;
+  $('#setDayEnd').value = Settings.dayEnd;
+}
+
+function wireSettingsInputs(){
+  const bind = (sel, key, fallback) => {
+    const el = $(sel);
+    el.addEventListener('input', () => {
+      let v = el.value.replace(/[^\d:]/g, '');
+      if(v.length === 2 && !v.includes(':')) v += ':';
+      el.value = v.slice(0, 5);
+      if(/^\d{1,2}:\d{2}$/.test(el.value) && hhmmToMin(el.value, null) !== null){
+        setSetting(key, el.value);
+        if(UIState.viewMode === 'timeline') renderAll();
+      }
+    });
+  };
+  bind('#setDayStart', 'dayStart');
+  bind('#setDayEnd', 'dayEnd');
+
+  $('#setReset').onclick = () => {
+    Settings = Object.assign({}, DEFAULT_SETTINGS);
+    saveSettings();
+    renderSettingsModal();
+    renderAll();
+    toast(t('settings.saved'), 'ok');
+  };
 }
 
 /* ---------------------------------------------------------------------------
@@ -2034,6 +2738,7 @@ function renderCategoryFilters(){
 }
 
 function setActiveNavAllTasks(){
+  UIState.inboxOnly = false;
   UIState.categoryId = null; UIState.priorityFilter = null; UIState.favOnly = false; UIState.todayOnly = false;
   renderAll();
 }
@@ -2116,6 +2821,7 @@ function renderDonut(container){
 
 /* ---- Карточки задач ---- */
 function taskMatchesFilters(tk){
+  if(UIState.inboxOnly && tk.due_date) return false;
   if(UIState.favOnly && !tk.is_favorite) return false;
   if(UIState.todayOnly && !isDueToday(tk.due_date)) return false;
   if(UIState.priorityFilter && tk.priority !== UIState.priorityFilter) return false;
@@ -2150,7 +2856,7 @@ function renderTasksGrid(container){
   const filtered = State.tasks.filter(taskMatchesFilters).sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
 
   if(!filtered.length){
-    const anyFilterActive = UIState.favOnly || UIState.todayOnly || UIState.priorityFilter || UIState.categoryId || UIState.search;
+    const anyFilterActive = UIState.favOnly || UIState.todayOnly || UIState.inboxOnly || UIState.priorityFilter || UIState.categoryId || UIState.search;
     container.innerHTML = `<div class="empty-state">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg>
       <div class="t">${anyFilterActive ? t('empty.filtered') : t('empty.none')}</div>
@@ -2170,12 +2876,15 @@ function renderTasksGrid(container){
     card.innerHTML = `
       <div class="tc-top">
         <div class="tc-check ${tk.completed ? 'on' : ''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 7"/></svg></div>
-        <div class="tc-title">${escapeHtml(tk.text)}</div>
+        <div class="tc-title">${tk.icon ? escapeHtml(tk.icon) + ' ' : ''}${escapeHtml(tk.text)}</div>
         <div class="tc-fav ${tk.is_favorite ? 'on' : ''}"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2l3.1 6.6 7.1.9-5.2 4.9 1.4 7-6.4-3.6L5.6 21.4l1.4-7-5.2-4.9 7.1-.9z"/></svg></div>
       </div>
       <div class="tc-meta">
         ${catColor ? `<span class="badge"><span class="d" style="background:${catColor};color:${catColor}"></span>${escapeHtml(categoryName(tk.category_id))}</span>` : ''}
         ${dueBadgeHtml(tk)}
+        ${tk.duration_min ? `<span class="badge">⏱ ${escapeHtml(fmtDuration(tk.duration_min))}</span>` : ''}
+        ${(tk.subtasks && tk.subtasks.length) ? `<span class="badge">☑️ ${tk.subtasks.filter(x=>x.completed).length}/${tk.subtasks.length}</span>` : ''}
+        ${tk.notes ? '<span class="badge">📝</span>' : ''}
       </div>
       <div class="tc-footer">
         <span class="tc-time">${timeAgo(tk.created_at)}</span>
@@ -2202,9 +2911,22 @@ function renderTasksGrid(container){
 }
 
 /* ---- Объёмный наклон карточки вслед за курсором (только мышь) ---- */
+
+/* matchMedia есть не везде: старые WebView и встроенные браузеры могут его
+   не поддерживать, и тогда одна проверка обрушила бы весь рендер списка.
+   Поэтому спрашиваем осторожно и при сомнении отвечаем «нет». */
+function mq(query){
+  try{
+    return typeof window.matchMedia === 'function' && window.matchMedia(query).matches;
+  }catch(_e){
+    return false;
+  }
+}
+
 function wireCardTilt(card){
-  if(window.matchMedia('(hover: none)').matches) return;          // на тач-экранах не нужно
-  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  if(mq('(hover: none)')) return;                    // на тач-экранах не нужно
+  if(mq('(prefers-reduced-motion: reduce)')) return;
+  if(!Settings.anim) return;                         // человек выключил анимации
 
   const MAX = 7;   // градусов
   card.addEventListener('mousemove', (e) => {
@@ -2313,6 +3035,8 @@ function renderAll(){
   $('#cntAll').textContent = State.tasks.filter(x => !x.completed).length;
   $('#cntToday').textContent = State.tasks.filter(x => !x.completed && isDueToday(x.due_date)).length;
   $('#cntFav').textContent = State.tasks.filter(x => x.is_favorite).length;
+  const inboxEl = $('#cntInbox');
+  if(inboxEl) inboxEl.textContent = State.tasks.filter(x => !x.completed && !x.due_date).length;
   const topLevelActive = UIState.favOnly ? 'favNav' : (UIState.todayOnly ? 'todayNav' : (!UIState.categoryId && !UIState.priorityFilter ? 'allTasksNav' : null));
   ['allTasksNav', 'todayNav', 'favNav'].forEach(id => $('#'+id).classList.toggle('active', id === topLevelActive));
   renderPriorityFilters();
@@ -2327,7 +3051,7 @@ function renderAll(){
   header.innerHTML = `
     <div>
       <div class="view-title display">${title.split('').map(ch => `<span>${ch === ' ' ? '&nbsp;' : ch}</span>`).join('')}</div>
-      <div class="view-sub">${t('view.subSpace')} · ORBIT</div>
+      <div class="view-sub">${UIState.inboxOnly ? escapeHtml(t('inbox.sub')) : t('view.subSpace') + ' · ORBIT'}</div>
     </div>
   `;
   main.appendChild(header);
@@ -2355,6 +3079,7 @@ function renderAll(){
     <div class="view-toggle" id="viewToggle">
       <button data-v="list" class="${UIState.viewMode === 'list' ? 'on' : ''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>${t('view.listMode')}</button>
       <button data-v="week" class="${UIState.viewMode === 'week' ? 'on' : ''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg>${t('view.weekMode')}</button>
+      <button data-v="timeline" class="${UIState.viewMode === 'timeline' ? 'on' : ''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M6 7h12M6 12h12M6 17h12"/></svg>${t('view.timelineMode')}</button>
     </div>
   `;
   main.appendChild(toolbar);
@@ -2373,6 +3098,13 @@ function renderAll(){
     return;
   }
 
+  if(UIState.viewMode === 'timeline'){
+    const tlWrap = document.createElement('div');
+    main.appendChild(tlWrap);
+    renderTimelineView(tlWrap);
+    return;
+  }
+
   const donutWrap = document.createElement('div');
   main.appendChild(donutWrap);
   renderDonut(donutWrap);
@@ -2388,6 +3120,140 @@ function renderTasksGridOnly(){
   const grid = $('#tasksGrid');
   if(grid) renderTasksGrid(grid);
 }
+
+/* ---------------------------------------------------------------------------
+   Дневной таймлайн. Главная идея: день — это отрезок времени, а не список.
+   Сразу видно дыры в расписании и перегруз, чего список показать не может.
+--------------------------------------------------------------------------- */
+function taskStartMin(tk){
+  if(!tk.due_date || tk.due_date.length <= 10) return null;
+  const h = Number(tk.due_date.slice(11,13)), m = Number(tk.due_date.slice(14,16));
+  return isNaN(h) ? null : h * 60 + m;
+}
+
+function fmtDuration(min){
+  if(!min) return '';
+  const h = Math.floor(min / 60), m = min % 60;
+  if(h && m) return `${h} ч ${m} мин`;
+  if(h) return `${h} ч`;
+  return `${m} мин`;
+}
+
+function renderTimelineView(container){
+  if(!UIState.timelineDay) UIState.timelineDay = new Date();
+  const day = UIState.timelineDay;
+  const dayKey = ymd(day);
+  const isToday = dayKey === ymd(new Date());
+
+  // Навигация по дням
+  const nav = document.createElement('div');
+  nav.className = 'week-nav';
+  const label = day.toLocaleDateString(currentLang === 'ru' ? 'ru-RU' : 'en-US',
+    {weekday:'long', day:'numeric', month:'long'});
+  nav.innerHTML = `
+    <button class="btn ghost icon" id="tlPrev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg></button>
+    <span class="label" style="min-width:190px; text-transform:capitalize;">${escapeHtml(label)}</span>
+    <button class="btn ghost icon" id="tlNext"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg></button>
+    <button class="btn ghost" id="tlToday">${escapeHtml(t('week.today'))}</button>`;
+  container.appendChild(nav);
+  $('#tlPrev', nav).onclick = () => { haptic('light'); UIState.timelineDay = addDays(day, -1); renderAll(); };
+  $('#tlNext', nav).onclick = () => { haptic('light'); UIState.timelineDay = addDays(day, 1); renderAll(); };
+  $('#tlToday', nav).onclick = () => { haptic('light'); UIState.timelineDay = new Date(); renderAll(); };
+
+  const dayTasks = State.tasks
+    .filter(tk => tk.due_date && tk.due_date.slice(0,10) === dayKey)
+    .sort((a,b) => (taskStartMin(a) ?? 1e9) - (taskStartMin(b) ?? 1e9));
+
+  // Загрузка дня: сумма длительностей против доступных часов
+  const startMin = hhmmToMin(Settings.dayStart, 480);
+  const endMin = Math.max(startMin + 60, hhmmToMin(Settings.dayEnd, 1320));
+  const capacity = endMin - startMin;
+  const planned = dayTasks.filter(x => !x.completed).reduce((a, x) => a + (x.duration_min || 0), 0);
+  const pct = Math.min(100, Math.round(planned / capacity * 100));
+  const over = planned > capacity;
+
+  const load = document.createElement('div');
+  load.className = 'tl-load';
+  load.innerHTML = `
+    <span>${escapeHtml(t('timeline.load'))}: <b>${fmtDuration(planned) || '0 мин'}</b></span>
+    <span class="tl-bar${over ? ' over' : ''}"><i style="width:${pct}%"></i></span>
+    <span>${over ? '⚠️ ' + escapeHtml(t('timeline.overbooked'))
+                 : `<b>${fmtDuration(Math.max(0, capacity - planned))}</b> ${escapeHtml(t('timeline.free'))}`}</span>`;
+  container.appendChild(load);
+
+  if(!dayTasks.length){
+    const empty = document.createElement('div');
+    empty.className = 'empty-state';
+    empty.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+      <div class="t">${escapeHtml(t('timeline.noTasks'))}</div>`;
+    container.appendChild(empty);
+    return;
+  }
+
+  const wrap = document.createElement('div');
+  wrap.className = 'tl-wrap';
+
+  const firstHour = Math.floor(Math.min(startMin, ...dayTasks.map(x => taskStartMin(x) ?? startMin)) / 60);
+  const lastHour = Math.max(Math.ceil(endMin / 60),
+    ...dayTasks.map(x => Math.ceil(((taskStartMin(x) ?? startMin) + (x.duration_min || 30)) / 60)));
+
+  const noTime = dayTasks.filter(x => taskStartMin(x) === null);
+
+  for(let h = firstHour; h <= lastHour; h++){
+    const row = document.createElement('div');
+    row.className = 'tl-hour';
+    const line = document.createElement('div');
+    line.className = 'tl-hour-line';
+    row.innerHTML = `<div class="tl-hour-label">${String(h).padStart(2,'0')}:00</div>`;
+    row.appendChild(line);
+
+    // Красная черта «сейчас»
+    if(isToday){
+      const now = new Date();
+      if(now.getHours() === h){
+        const marker = document.createElement('div');
+        marker.className = 'tl-now';
+        marker.style.top = (now.getMinutes() / 60 * 100) + '%';
+        line.appendChild(marker);
+      }
+    }
+
+    dayTasks.filter(x => {
+      const st = taskStartMin(x);
+      return st !== null && Math.floor(st / 60) === h;
+    }).forEach(tk => line.appendChild(timelineBlock(tk)));
+
+    // Задачи на этот день без времени показываем в первом часу
+    if(h === firstHour) noTime.forEach(tk => line.appendChild(timelineBlock(tk)));
+
+    wrap.appendChild(row);
+  }
+
+  container.appendChild(wrap);
+}
+
+function timelineBlock(tk){
+  const el = document.createElement('div');
+  el.className = `tl-block pri-${tk.priority}` + (tk.completed ? ' is-done' : '');
+  const start = taskStartMin(tk);
+  const timeStr = start === null ? ''
+    : `${String(Math.floor(start/60)).padStart(2,'0')}:${String(start%60).padStart(2,'0')}`;
+  const subs = tk.subtasks || [];
+  const doneSubs = subs.filter(x => x.completed).length;
+
+  el.innerHTML = `
+    <div class="tl-title">${tk.icon ? escapeHtml(tk.icon) + ' ' : ''}${escapeHtml(tk.text)}</div>
+    <div class="tl-meta">
+      ${timeStr ? `<span>🕐 ${timeStr}</span>` : ''}
+      ${tk.duration_min ? `<span>⏱ ${escapeHtml(fmtDuration(tk.duration_min))}</span>` : ''}
+      ${subs.length ? `<span>☑️ ${doneSubs}/${subs.length}</span>` : ''}
+      ${categoryColor(tk.category_id) ? `<span>🏷 ${escapeHtml(categoryName(tk.category_id))}</span>` : ''}
+    </div>`;
+  el.onclick = () => openTaskModal(tk);
+  return el;
+}
+
+function addDays(d, n){ const x = new Date(d); x.setDate(x.getDate() + n); return x; }
 
 /* ---------------------------------------------------------------------------
    Недельный календарь (стиль Tweek): 7 дней + колонка "без даты",
@@ -2419,6 +3285,7 @@ function renderWeekView(container){
   const filteredTasks = State.tasks.filter(tk => {
     if(UIState.categoryId && tk.category_id !== UIState.categoryId) return false;
     if(UIState.priorityFilter && tk.priority !== UIState.priorityFilter) return false;
+    if(UIState.inboxOnly && tk.due_date) return false;
     if(UIState.favOnly && !tk.is_favorite) return false;
     if(UIState.search && !tk.text.toLowerCase().includes(UIState.search.toLowerCase())) return false;
     return true;
@@ -2502,6 +3369,7 @@ function buildWeekTaskChip(tk){
 }
 
 function viewTitleText(){
+  if(UIState.inboxOnly) return t('inbox.title');
   if(UIState.favOnly) return t('nav.favorites');
   if(UIState.todayOnly) return t('nav.today');
   if(UIState.priorityFilter) return t(PRIORITY_DEFS.find(p=>p.id===UIState.priorityFilter).labelKey);
@@ -2790,6 +3658,112 @@ function wireDuePicker(){
   });
 }
 
+/* ===========================================================================
+   Иконки, длительность, заметка и подзадачи — то, чего задаче не хватало,
+   чтобы быть чем-то большим, чем одинокая строка текста.
+=========================================================================== */
+const TASK_ICONS = ['📌','✅','💼','📚','💻','✍️','📞','💰','🛒','🏠','🧹','🍳','🏋️','🏃','🧘',
+  '💊','🩺','🚗','✈️','🎓','📝','📊','🎯','💡','🔧','🎨','🎵','🎬','☕️','🌿','❤️','🔥','⭐️','🎁','📦','🐾'];
+
+const TaskDraft = { icon: null, duration: 0, subtasks: [] };
+
+function renderIconGrid(){
+  const grid = $('#tmIconGrid');
+  grid.innerHTML = TASK_ICONS.map(ic =>
+    `<button class="icon-opt${TaskDraft.icon === ic ? ' on' : ''}" type="button" data-ic="${ic}">${ic}</button>`
+  ).join('');
+  $$('.icon-opt', grid).forEach(b => b.onclick = () => {
+    haptic('light');
+    TaskDraft.icon = (TaskDraft.icon === b.dataset.ic) ? null : b.dataset.ic;
+    $('#tmIconBtn').textContent = TaskDraft.icon || '📌';
+    renderIconGrid();
+  });
+}
+
+function renderDurationChips(){
+  $$('#tmDuration .due-chip').forEach(b =>
+    b.classList.toggle('on', Number(b.dataset.dur) === (TaskDraft.duration || 0)));
+}
+
+function renderSubtasks(){
+  const list = $('#tmSubList');
+  const prog = $('#tmSubProgress');
+  const subs = TaskDraft.subtasks;
+
+  if(!subs.length){
+    list.innerHTML = '';
+    prog.hidden = true;
+    return;
+  }
+
+  const done = subs.filter(x => x.completed).length;
+  prog.hidden = false;
+  prog.textContent = `${done} / ${subs.length}`;
+
+  list.innerHTML = '';
+  subs.forEach((st, idx) => {
+    const row = document.createElement('div');
+    row.className = 'sub-row' + (st.completed ? ' done' : '');
+    row.innerHTML = `
+      <span class="sub-check ${st.completed ? 'on' : ''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 7"/></svg></span>
+      <input value="${escapeHtml(st.text)}" maxlength="150">
+      <span class="sub-del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></span>`;
+
+    $('.sub-check', row).onclick = async () => {
+      haptic(st.completed ? 'light' : 'success');
+      st.completed = st.completed ? 0 : 1;
+      renderSubtasks();
+      if(st.id) try{ await Api.updateSubtask(st.id, {completed: !!st.completed}); }catch(_e){}
+      syncSubtasksToState();
+    };
+    $('input', row).onchange = async (e) => {
+      const val = e.target.value.trim();
+      if(!val){ e.target.value = st.text; return; }
+      st.text = val;
+      if(st.id) try{ await Api.updateSubtask(st.id, {text: val}); }catch(_e){}
+      syncSubtasksToState();
+    };
+    $('.sub-del', row).onclick = async () => {
+      haptic('warning');
+      TaskDraft.subtasks.splice(idx, 1);
+      renderSubtasks();
+      if(st.id) try{ await Api.deleteSubtask(st.id); }catch(_e){}
+      syncSubtasksToState();
+    };
+    list.appendChild(row);
+  });
+}
+
+/* Держим State в согласии с черновиком, чтобы карточки и таймлайн
+   показывали свежий счётчик подзадач без перезагрузки. */
+function syncSubtasksToState(){
+  if(!editingTaskId) return;
+  const tk = State.tasks.find(x => x.id === editingTaskId);
+  if(tk){ tk.subtasks = TaskDraft.subtasks.slice(); renderAll(); }
+}
+
+async function addSubtaskFromInput(){
+  const input = $('#tmSubInput');
+  const text = input.value.trim();
+  if(!text) return;
+  input.value = '';
+
+  const st = {id: null, text, completed: 0};
+  TaskDraft.subtasks.push(st);
+  renderSubtasks();
+  haptic('light');
+
+  // У новой, ещё не сохранённой задачи id появится после создания —
+  // тогда подзадачи отправятся пачкой в saveTaskModal.
+  if(editingTaskId){
+    try{
+      const r = await Api.createSubtask(editingTaskId, text);
+      st.id = r.id;
+      syncSubtasksToState();
+    }catch(err){ toast(friendlyError(err), 'err'); }
+  }
+}
+
 let editingTaskId = null;
 function openTaskModal(task){
   editingTaskId = task ? task.id : null;
@@ -2812,6 +3786,18 @@ function openTaskModal(task){
   $('#duePanel').hidden = true;
   $('#dueTimeInput').value = DueState.time || '';
   renderDueField();
+
+  TaskDraft.icon = task ? (task.icon || null) : null;
+  TaskDraft.duration = task ? (task.duration_min || 0) : 0;
+  TaskDraft.subtasks = task && task.subtasks ? task.subtasks.map(x => Object.assign({}, x)) : [];
+  $('#tmIconBtn').textContent = TaskDraft.icon || '📌';
+  $('#tmIconGrid').hidden = true;
+  $('#tmNotes').value = task ? (task.notes || '') : '';
+  $('#tmSubInput').value = '';
+  renderIconGrid();
+  renderDurationChips();
+  renderSubtasks();
+  $('#tmFocus').style.display = task ? 'inline-flex' : 'none';
   const pr = task ? task.priority : 'medium';
   $$('#tmPriority button').forEach(b => b.classList.toggle('on', b.dataset.v === pr));
   $('#taskModal').classList.add('show');
@@ -2872,17 +3858,35 @@ async function saveTaskModal(){
     ? (DueState.time ? `${DueState.date}T${DueState.time}:00` : DueState.date)
     : null;
 
+  const notes = $('#tmNotes').value.trim() || null;
+  const duration_min = TaskDraft.duration || null;
+  const icon = TaskDraft.icon || null;
+
   try{
     if(editingTaskId){
-      await Api.updateTask(editingTaskId, {text, priority, category_id, due_date});
+      await Api.updateTask(editingTaskId, {text, priority, category_id, due_date, notes, duration_min, icon});
       const tk = State.tasks.find(x => x.id === editingTaskId);
-      if(tk){ tk.text = text; tk.priority = priority; tk.category_id = category_id; tk.due_date = due_date; }
+      if(tk){
+        Object.assign(tk, {text, priority, category_id, due_date, notes, duration_min, icon});
+        tk.subtasks = TaskDraft.subtasks.slice();
+      }
       toast(t('task.updated'), 'ok');
     }else{
-      const resp = await Api.createTask({text, priority, category_id, due_date});
+      const resp = await Api.createTask({text, priority, category_id, due_date, notes, duration_min, icon});
+
+      // Подзадачи новой задачи копились локально — отправляем их теперь,
+      // когда у задачи наконец появился идентификатор.
+      const created = [];
+      for(const st of TaskDraft.subtasks){
+        try{
+          const r = await Api.createSubtask(resp.id, st.text);
+          created.push({id: r.id, text: st.text, completed: 0});
+        }catch(_e){}
+      }
+
       State.tasks.unshift({
-        id: resp.id, text, priority, category_id, due_date,
-        completed: false, is_favorite: false,
+        id: resp.id, text, priority, category_id, due_date, notes, duration_min, icon,
+        completed: false, is_favorite: false, subtasks: created,
         created_at: new Date().toISOString(), completed_at: null,
       });
       toast(t('task.created'), 'ok');
@@ -2967,20 +3971,44 @@ function wireStaticEvents(){
   $('#allTasksNav').onclick = setActiveNavAllTasks;
   $('#todayNav').onclick = () => {
     const turningOn = !UIState.todayOnly;
-    UIState.todayOnly = turningOn; UIState.favOnly = false;
+    UIState.todayOnly = turningOn; UIState.favOnly = false; UIState.inboxOnly = false;
     if(turningOn){ UIState.categoryId = null; UIState.priorityFilter = null; }
     renderAll();
   };
   $('#favNav').onclick = () => {
     const turningOn = !UIState.favOnly;
-    UIState.favOnly = turningOn; UIState.todayOnly = false;
+    UIState.favOnly = turningOn; UIState.todayOnly = false; UIState.inboxOnly = false;
     if(turningOn){ UIState.categoryId = null; UIState.priorityFilter = null; }
     renderAll();
   };
+  $('#inboxNav').onclick = () => {
+    const turningOn = !UIState.inboxOnly;
+    UIState.inboxOnly = turningOn; UIState.favOnly = false; UIState.todayOnly = false;
+    if(turningOn){ UIState.categoryId = null; UIState.priorityFilter = null; UIState.viewMode = 'list'; }
+    renderAll();
+  };
+  $('#btnSettings').onclick = () => { haptic('light'); openSettingsModal(); };
+  $('#settingsNavMobile').onclick = () => { haptic('light'); openSettingsModal(); };
+  wireSettingsInputs();
   $('#btnAddCategory').onclick = openCategoryModal;
 
   $('#btnNewTask').onclick = () => openTaskModal(null);
   $('#tmSave').onclick = saveTaskModal;
+  $('#tmFocus').onclick = () => {
+    const tk = State.tasks.find(x => x.id === editingTaskId);
+    closeTaskModal();
+    if(tk) openFocus(tk);
+  };
+  $('#tmIconBtn').onclick = () => { haptic('light'); $('#tmIconGrid').hidden = !$('#tmIconGrid').hidden; };
+  $$('#tmDuration .due-chip').forEach(b => b.onclick = () => {
+    haptic('light');
+    TaskDraft.duration = Number(b.dataset.dur) || 0;
+    renderDurationChips();
+  });
+  $('#tmSubInput').addEventListener('keydown', e => {
+    if(e.key === 'Enter'){ e.preventDefault(); addSubtaskFromInput(); }
+  });
+  wireFocus();
   $('#tmDelete').onclick = deleteFromModal;
   $('#tmPriority').querySelectorAll('button').forEach(b => b.onclick = () => {
     $$('#tmPriority button').forEach(x => x.classList.remove('on'));
