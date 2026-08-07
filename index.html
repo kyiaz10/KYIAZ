@@ -1510,7 +1510,9 @@ const I18N = {
     'sessions.loadError': 'Не удалось загрузить список сессий.',
     'toast.networkError': 'Ошибка сети. Проверьте соединение с сервером.',
     'err.notDeployed': 'Сервер не знает этот запрос — вероятно, на нём старая версия кода.',
-    'err.dbError': 'Ошибка базы данных на сервере. Посмотрите логи Render.',
+    'err.dbError': 'Ошибка базы данных',
+    'err.dbReadonly': 'Сервер не может писать в базу данных',
+    'err.dbBusy': 'База данных занята, попробуйте ещё раз',
     'err.serverDown': 'Сервер вернул ошибку {n}. Возможно, он не смог запуститься.',
     'err.http': 'Сервер ответил кодом {n}.',
   },
@@ -1675,7 +1677,9 @@ const I18N = {
     'sessions.loadError': 'Could not load the sessions list.',
     'toast.networkError': 'Network error. Check the connection to the server.',
     'err.notDeployed': 'The server does not know this request — it is probably running old code.',
-    'err.dbError': 'Database error on the server. Check the Render logs.',
+    'err.dbError': 'Database error',
+    'err.dbReadonly': 'The server cannot write to the database',
+    'err.dbBusy': 'Database is busy, please try again',
     'err.serverDown': 'The server returned error {n}. It may have failed to start.',
     'err.http': 'The server responded with code {n}.',
   }
@@ -2016,7 +2020,7 @@ async function api(path, {method='GET', body=null, auth=true, _retried=false} = 
 
   // Сервер сам догнал схему базы и просит повторить — делаем это молча,
   // человеку незачем видеть техническую заминку.
-  if(!resp.ok && data && data.code === 'schema_migrated' && !_retried){
+  if(!resp.ok && data && (data.code === 'schema_migrated' || data.code === 'db_busy') && !_retried){
     await new Promise(r => setTimeout(r, 300));
     return api(path, {method, body, auth, _retried: true});
   }
@@ -2032,7 +2036,7 @@ async function api(path, {method='GET', body=null, auth=true, _retried=false} = 
       else if(resp.status >= 500)  { err = t('err.serverDown', {n: resp.status}); code = 'server_error'; }
       else                          { err = t('err.http', {n: resp.status}); code = 'http_error'; }
     }
-    throw {status: resp.status, code, message: err};
+    throw {status: resp.status, code, message: err, detail: data && data.detail};
   }
   return data;
 }
@@ -2064,6 +2068,8 @@ const Api = {
 /* Единая обработка ошибок API -> текст на нужном языке */
 const ERROR_KEY_MAP = {
   db_error: 'err.dbError',
+  db_readonly: 'err.dbReadonly',
+  db_busy: 'err.dbBusy',
   invalid_email: 'login.errEmail',
   cooldown: 'login.errCooldown',
   no_code: 'login.errCode',
@@ -2073,8 +2079,13 @@ const ERROR_KEY_MAP = {
 };
 function friendlyError(err){
   if(err && err.network) return err.message;
-  if(err && err.code && ERROR_KEY_MAP[err.code]) return t(ERROR_KEY_MAP[err.code]);
-  return (err && err.message) || t('toast.networkError');
+  let base = (err && err.code && ERROR_KEY_MAP[err.code])
+    ? t(ERROR_KEY_MAP[err.code])
+    : ((err && err.message) || t('toast.networkError'));
+  // Техническая подробность от сервера (текст ошибки базы и т.п.) — без неё
+  // причину приходится искать в логах хостинга.
+  if(err && err.detail) base += ' — ' + err.detail;
+  return base;
 }
 
 /* ---------------------------------------------------------------------------
