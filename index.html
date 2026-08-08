@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>ORBIT — цифровая вселенная задач</title>
+<title>Orbit</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-round-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -295,12 +295,40 @@ a{color:inherit;}
    Темы оформления. Всё держится на переменных из :root, поэтому
    смена темы — это подмена нескольких значений, без перерисовки.
 ============================================================ */
+/* ------------------------------------------------------------------
+   Атмосферный свет за интерфейсом.
+
+   Раньше темы отличались только цветом кнопки, и на глаз были почти
+   одинаковыми. Теперь у каждой свои источники света на фоне: два-три
+   мягких пятна по краям. Они не мешают читать (прозрачность низкая),
+   но задают характер — тема считывается с первого взгляда.
+------------------------------------------------------------------ */
+body::before{
+  content:''; position:fixed; inset:0; z-index:0; pointer-events:none;
+  background:var(--ambient, none);
+  transition:background .5s var(--ease);
+}
+#app{position:relative; z-index:1;}
+
+/* Сумерки — прохладный сине-фиолетовый */
+html[data-theme="twilight"]{
+  --ambient:
+    radial-gradient(ellipse 60% 45% at 12% 0%,   rgba(96,116,255,.13), transparent 62%),
+    radial-gradient(ellipse 45% 40% at 92% 8%,   rgba(70,160,255,.10), transparent 60%),
+    radial-gradient(ellipse 70% 45% at 50% 108%, rgba(120,80,220,.09), transparent 62%);
+}
+
 /* Космос — прежний фиолетово-чёрный, для тех, кому нравился старый вид */
 html[data-theme="cosmos"]{
   --bg-0:#0a0b14; --bg-1:#11121f; --bg-2:#171929; --bg-3:#202338;
   --glass-border:rgba(150,160,255,.1); --border-strong:rgba(150,160,255,.2);
   --text-1:#eef0f7; --text-2:#adb4cc; --text-3:#838aa4;
   --violet:#2a2456;
+
+  --ambient:
+    radial-gradient(ellipse 65% 50% at 8% -5%,  rgba(130,80,255,.20), transparent 60%),
+    radial-gradient(ellipse 50% 45% at 96% 10%, rgba(40,90,220,.16), transparent 58%),
+    radial-gradient(ellipse 80% 50% at 50% 110%,rgba(90,40,180,.14), transparent 60%);
 }
 html[data-theme="cosmos"] body{
   background:
@@ -318,6 +346,10 @@ html[data-theme="midnight"]{
   --glass-border:rgba(255,255,255,.06); --border-strong:rgba(255,255,255,.11);
   --text-1:#eceff6; --text-2:#a8afc2; --text-3:#7d8498;
   --violet:#1e2136;
+
+  --ambient:
+    radial-gradient(ellipse 55% 40% at 50% -8%, rgba(90,110,190,.09), transparent 62%),
+    radial-gradient(ellipse 60% 40% at 50% 112%,rgba(60,70,130,.07), transparent 62%);
 }
 
 /* Океан — холодный сине-зелёный */
@@ -327,6 +359,11 @@ html[data-theme="ocean"]{
   --text-1:#eef7fa; --text-2:#a9c4cd; --text-3:#7d9aa5;
   --sky:#4fd1e0; --sky-glow:rgba(79,209,224,.35);
   --emerald:#4ade80; --amber:#fbbf24; --violet:#14323d;
+
+  --ambient:
+    radial-gradient(ellipse 60% 45% at 10% 0%,  rgba(0,190,220,.20), transparent 60%),
+    radial-gradient(ellipse 55% 40% at 95% 15%, rgba(0,130,190,.17), transparent 58%),
+    radial-gradient(ellipse 85% 45% at 50% 108%,rgba(0,150,160,.13), transparent 62%);
 }
 
 /* Закат — тёплый, розово-янтарный */
@@ -336,6 +373,11 @@ html[data-theme="sunset"]{
   --text-1:#faf0f2; --text-2:#d0b6be; --text-3:#a68d96;
   --sky:#ff9e7d; --sky-glow:rgba(255,158,125,.35);
   --amber:#ffc46b; --red:#ff6b8a; --emerald:#7dd3a0; --violet:#3d2430;
+
+  --ambient:
+    radial-gradient(ellipse 60% 45% at 5% 0%,   rgba(255,120,90,.20), transparent 60%),
+    radial-gradient(ellipse 55% 45% at 98% 12%, rgba(255,90,150,.17), transparent 58%),
+    radial-gradient(ellipse 80% 50% at 50% 110%,rgba(190,70,120,.14), transparent 62%);
 }
 
 /* Лес — приглушённый зелёный */
@@ -345,6 +387,11 @@ html[data-theme="forest"]{
   --text-1:#eff8f2; --text-2:#aec9ba; --text-3:#849d90;
   --sky:#5eead4; --sky-glow:rgba(94,234,212,.35);
   --emerald:#4ade80; --amber:#fcd34d; --violet:#1a3328;
+
+  --ambient:
+    radial-gradient(ellipse 60% 45% at 8% 0%,   rgba(50,220,150,.17), transparent 60%),
+    radial-gradient(ellipse 55% 40% at 95% 12%, rgba(120,200,90,.13), transparent 58%),
+    radial-gradient(ellipse 80% 50% at 50% 110%,rgba(20,140,110,.12), transparent 62%);
 }
 
 /* Графит — нейтральный, без единого цветного оттенка */
@@ -354,18 +401,32 @@ html[data-theme="mono"]{
   --text-1:#f4f4f5; --text-2:#b4b4b8; --text-3:#88888e;
   --sky:#a1a1aa; --sky-glow:rgba(161,161,170,.3);
   --amber:#d4d4d8; --emerald:#e4e4e7; --red:#fafafa; --violet:#2a2a2a;
+
+  --ambient:
+    radial-gradient(ellipse 60% 45% at 12% 0%,  rgba(255,255,255,.055), transparent 60%),
+    radial-gradient(ellipse 70% 45% at 50% 112%,rgba(255,255,255,.03), transparent 62%);
 }
 
 /* Светлая */
+/* Светлая. Раньше фон и панели были почти одного белого — слои не
+   различались, интерфейс выглядел плоским листом бумаги. Теперь фон
+   заметно темнее карточек, как в Notion или Linear. */
 html[data-theme="light"]{
-  --bg-0:#f7f8fa; --bg-1:#ffffff; --bg-2:#ffffff; --bg-3:#f0f1f5;
-  --glass-border:rgba(16,20,35,.1); --border-strong:rgba(16,20,35,.18);
-  --text-1:#14161f; --text-2:#4e5568; --text-3:#767d90;
-  --violet:#d9ddf0;
-  --sh-1:0 1px 2px rgba(16,20,35,.06);
-  --sh-2:0 2px 8px rgba(16,20,35,.09);
-  --sh-3:0 8px 24px -8px rgba(16,20,35,.14);
-  --red:#e5484d; --amber:#d97706; --emerald:#16a34a; --sky:#0284c7;
+  --bg-0:#eceef4;     /* фон приложения — ощутимо серее */
+  --bg-1:#f7f8fb;     /* панели */
+  --bg-2:#ffffff;     /* карточки — самые светлые, поэтому «всплывают» */
+  --bg-3:#eef0f6;     /* наведение */
+  --glass-border:rgba(16,20,35,.12); --border-strong:rgba(16,20,35,.2);
+  --text-1:#11131c; --text-2:#454c60; --text-3:#6b7285;
+  --violet:#d3d9f0;
+  --sh-1:0 1px 2px rgba(16,20,35,.07);
+  --sh-2:0 3px 10px rgba(16,20,35,.1);
+  --sh-3:0 10px 30px -8px rgba(16,20,35,.16);
+  --red:#dc2626; --amber:#c2670a; --emerald:#15803d; --sky:#0369a1;
+  --ambient:
+    radial-gradient(ellipse 60% 45% at 8% 0%,   rgba(120,140,255,.13), transparent 60%),
+    radial-gradient(ellipse 55% 40% at 96% 10%, rgba(90,180,255,.11), transparent 58%),
+    radial-gradient(ellipse 80% 45% at 50% 110%,rgba(160,120,255,.09), transparent 62%);
 }
 html[data-theme="light"] .select-field option{background:#fff; color:#14161f;}
 html[data-theme="light"] ::-webkit-scrollbar-thumb{background:rgba(16,20,35,.16);}
@@ -634,7 +695,7 @@ html[data-theme="light"] .focus-overlay{background:rgba(244,245,249,.93);}
   position:relative; z-index:40;
 }
 .brand{display:flex; align-items:center; gap:9px; font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:16px; letter-spacing:.02em; flex:0 0 auto;}
-.brand-glyph{width:22px; height:22px; object-fit:contain; flex:0 0 auto;}
+.brand-glyph{width:28px; height:28px; border-radius:8px; object-fit:cover; flex:0 0 auto;}
 .btn-menu{display:none; flex:0 0 auto;}
 .topbar-spacer{flex:1;}
 .topbar-actions{display:flex; align-items:center; gap:8px;}
@@ -710,6 +771,16 @@ html[data-theme="light"] .focus-overlay{background:rgba(244,245,249,.93);}
 
 .view-header{margin-bottom:22px; display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap;}
 .view-title{font-size:var(--fs-xl); font-weight:600; display:flex; gap:1px; letter-spacing:-.02em;}
+.view-clear{
+  margin-left:10px; width:26px; height:26px; border-radius:50%;
+  display:inline-flex; align-items:center; justify-content:center;
+  background:var(--bg-2); border:1px solid var(--glass-border);
+  color:var(--text-3); vertical-align:middle; align-self:center;
+  transition:all .16s var(--ease);
+}
+.view-clear:hover{background:var(--bg-3); color:var(--red); border-color:var(--border-strong);}
+.view-clear svg{width:12px; height:12px;}
+
 .view-title span{display:inline-block; opacity:0; transform:translateY(8px); animation:titleIn .4s var(--ease-soft) forwards;}
 @keyframes titleIn{to{opacity:1; transform:translateY(0);}}
 .view-sub{color:var(--text-3); font-size:12.5px; margin-top:5px;}
@@ -747,6 +818,9 @@ html[data-theme="light"] .focus-overlay{background:rgba(244,245,249,.93);}
 /* Компактная сводка дня вместо большого пончика */
 .summary-card{
   display:flex; align-items:center; gap:26px; flex-wrap:wrap;
+  /* Полосе прогресса не нужна вся ширина экрана: раньше между числами
+     и «0%» зияло больше 800 пикселей пустоты. */
+  max-width:660px;
   padding:14px 18px; margin-bottom:18px;
   border-radius:var(--r-lg); background:var(--bg-2);
   border:1px solid var(--glass-border);
@@ -757,14 +831,14 @@ html[data-theme="light"] .focus-overlay{background:rgba(244,245,249,.93);}
   line-height:1.1; font-variant-numeric:tabular-nums;}
 .sum-l{font-size:var(--fs-xs); color:var(--text-3);}
 .sum-item.warn .sum-n{color:var(--red);}
-.sum-progress{flex:1; min-width:150px; display:flex; align-items:center; gap:10px;}
+.sum-progress{flex:1; min-width:120px; max-width:260px; display:flex; align-items:center; gap:10px;}
 .sum-bar{flex:1; height:6px; border-radius:6px; background:var(--bg-3); overflow:hidden;}
 .sum-bar i{display:block; height:100%; border-radius:6px;
   background:linear-gradient(90deg, var(--acc-1), var(--acc-2));
   transition:width .7s var(--ease-soft);}
 .sum-pct{font-size:var(--fs-sm); color:var(--text-2); font-variant-numeric:tabular-nums;}
 
-.tasks-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr)); gap:14px;}
+.tasks-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:12px; align-content:start;}
 
 /* ---- Переключатель вида: список / неделя ---- */
 .view-toggle{display:flex; background:rgba(255,255,255,.04); border:1px solid var(--glass-border); border-radius:11px; padding:3px; gap:3px; flex:0 0 auto;}
@@ -1340,7 +1414,7 @@ kbd{
     <button class="btn ghost icon btn-menu" id="btnMenu" title="Меню">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
     </button>
-    <div class="brand"><img class="brand-glyph" src="icon-round-192.png" alt="Orbit">ORBIT</div>
+    <div class="brand"><img class="brand-glyph" src="icon-192.png" alt="Orbit">ORBIT</div>
     <div class="topbar-spacer"></div>
     <div class="topbar-actions">
       <div class="lang-switch" id="langSwitchApp">
@@ -1914,6 +1988,7 @@ const I18N = {
     'view.title': 'Обзор',
     'view.subSpace': 'Пространство',
     'view.subEmpty': 'Пока пусто — самое время начать',
+    'user.guest': 'Гость',
     'view.nActive1': 'задача в работе', 'view.nActive2': 'задачи в работе', 'view.nActive5': 'задач в работе',
     'view.nOverdue': 'просрочено:',
     'search.placeholder': 'Поиск по названию, заметкам и шагам…',
@@ -2128,6 +2203,7 @@ const I18N = {
     'view.title': 'Overview',
     'view.subSpace': 'Space',
     'view.subEmpty': 'Nothing here yet — a good time to start',
+    'user.guest': 'Guest',
     'view.nActive1': 'task in progress', 'view.nActive2': 'tasks in progress', 'view.nActive5': 'tasks in progress',
     'view.nOverdue': 'overdue:',
     'search.placeholder': 'Search titles, notes and steps…',
@@ -2220,15 +2296,25 @@ const UI_STATE_KEY = STORAGE_PREFIX + 'ui';
 
 /* Превью строится из тех же цветов, что и сама тема, поэтому квадратик
    в настройках показывает настоящий результат, а не абстрактный градиент. */
+/* Превью повторяет и цвета, и атмосферный свет темы — без света
+   квадратики в настройках выглядели почти одинаково. */
 const THEMES = [
-  {id:'twilight', nameKey:'theme.twilight', bg:'#14161f', card:'#1f2330', line:'#f2f4f9', dim:'#8b92a6', acc:'#7d93ff'},
-  {id:'cosmos',   nameKey:'theme.cosmos',   bg:'#0a0b14', card:'#171929', line:'#eef0f7', dim:'#838aa4', acc:'#8b93ff'},
-  {id:'midnight', nameKey:'theme.midnight', bg:'#08090e', card:'#12141d', line:'#eceff6', dim:'#7d8498', acc:'#7aa2ff'},
-  {id:'ocean',    nameKey:'theme.ocean',    bg:'#0d1a20', card:'#182b35', line:'#eef7fa', dim:'#7d9aa5', acc:'#4fd1e0'},
-  {id:'sunset',   nameKey:'theme.sunset',   bg:'#1c1418', card:'#2d2028', line:'#faf0f2', dim:'#a68d96', acc:'#ff9e7d'},
-  {id:'forest',   nameKey:'theme.forest',   bg:'#101a15', card:'#1b2b23', line:'#eff8f2', dim:'#849d90', acc:'#5eead4'},
-  {id:'mono',     nameKey:'theme.mono',     bg:'#161616', card:'#222222', line:'#f4f4f5', dim:'#88888e', acc:'#a1a1aa'},
-  {id:'light',    nameKey:'theme.light',    bg:'#f7f8fa', card:'#ffffff', line:'#14161f', dim:'#767d90', acc:'#4a63e8'},
+  {id:'twilight', nameKey:'theme.twilight', bg:'#14161f', card:'#1f2330', line:'#f2f4f9', dim:'#8b92a6', acc:'#7d93ff',
+   glow:'radial-gradient(ellipse 70% 60% at 15% 0%, rgba(96,116,255,.35), transparent 65%), radial-gradient(ellipse 60% 55% at 95% 100%, rgba(120,80,220,.25), transparent 65%)'},
+  {id:'cosmos',   nameKey:'theme.cosmos',   bg:'#0a0b14', card:'#171929', line:'#eef0f7', dim:'#838aa4', acc:'#8b93ff',
+   glow:'radial-gradient(ellipse 75% 65% at 10% 0%, rgba(130,80,255,.5), transparent 65%), radial-gradient(ellipse 60% 55% at 100% 100%, rgba(40,90,220,.4), transparent 65%)'},
+  {id:'midnight', nameKey:'theme.midnight', bg:'#08090e', card:'#12141d', line:'#eceff6', dim:'#7d8498', acc:'#7aa2ff',
+   glow:'radial-gradient(ellipse 70% 60% at 50% 0%, rgba(90,110,190,.28), transparent 68%)'},
+  {id:'ocean',    nameKey:'theme.ocean',    bg:'#0d1a20', card:'#182b35', line:'#eef7fa', dim:'#7d9aa5', acc:'#4fd1e0',
+   glow:'radial-gradient(ellipse 75% 65% at 10% 0%, rgba(0,190,220,.5), transparent 65%), radial-gradient(ellipse 60% 55% at 100% 100%, rgba(0,150,160,.38), transparent 65%)'},
+  {id:'sunset',   nameKey:'theme.sunset',   bg:'#1c1418', card:'#2d2028', line:'#faf0f2', dim:'#a68d96', acc:'#ff9e7d',
+   glow:'radial-gradient(ellipse 75% 65% at 8% 0%, rgba(255,120,90,.5), transparent 65%), radial-gradient(ellipse 60% 55% at 100% 100%, rgba(255,90,150,.38), transparent 65%)'},
+  {id:'forest',   nameKey:'theme.forest',   bg:'#101a15', card:'#1b2b23', line:'#eff8f2', dim:'#849d90', acc:'#5eead4',
+   glow:'radial-gradient(ellipse 75% 65% at 10% 0%, rgba(50,220,150,.42), transparent 65%), radial-gradient(ellipse 60% 55% at 100% 100%, rgba(120,200,90,.3), transparent 65%)'},
+  {id:'mono',     nameKey:'theme.mono',     bg:'#161616', card:'#222222', line:'#f4f4f5', dim:'#88888e', acc:'#a1a1aa',
+   glow:'radial-gradient(ellipse 70% 60% at 15% 0%, rgba(255,255,255,.14), transparent 65%)'},
+  {id:'light',    nameKey:'theme.light',    bg:'#eceef4', card:'#ffffff', line:'#11131c', dim:'#6b7285', acc:'#4a63e8',
+   glow:'radial-gradient(ellipse 75% 65% at 10% 0%, rgba(120,140,255,.35), transparent 65%), radial-gradient(ellipse 60% 55% at 100% 100%, rgba(160,120,255,.25), transparent 65%)'},
 ];
 
 const ACCENTS = [
@@ -2258,6 +2344,7 @@ function applySettings(){
   // Цвет системной шапки в Telegram и вкладки браузера
   const themeDef = THEMES.find(x => x.id === Settings.theme) || THEMES[0];
   const bg = themeDef.bg;
+  document.body.style.background = bg;
   const meta = document.querySelector('meta[name="theme-color"]');
   if(meta) meta.content = bg;
   try{
@@ -3448,7 +3535,12 @@ function enterApp(){
   $('#loginScreen').classList.remove('show');
   $('#app').classList.add('ready');
   applyStartParam();
-  const label = State.user ? (State.user.display_name || State.user.phone || State.user.email || ('#' + State.user.id)) : '—';
+  // «Гость aTiCEA» — случайный хвост нужен базе для уникальности, но
+  // человеку он ничего не говорит и выглядит как ошибка. Прячем его.
+  let raw = State.user ? (State.user.display_name || State.user.phone || State.user.email || ('#' + State.user.id)) : '—';
+  const label = /^Гость\s/.test(raw) ? t('user.guest')
+              : /^Guest\s/i.test(raw) ? t('user.guest')
+              : raw;
   $('#userIdLabel').textContent = label;
   renderPriorityFilters();
   renderAll();
@@ -4072,7 +4164,7 @@ function renderSettingsModal(){
   const grid = $('#themeGrid');
   grid.innerHTML = THEMES.map(th => `
     <button class="theme-card${Settings.theme === th.id ? ' on' : ''}" data-theme="${th.id}">
-      <div class="theme-preview" style="background:${th.bg};">
+      <div class="theme-preview" style="background:${th.glow ? th.glow + ', ' : ''}${th.bg};">
         <div class="tp-card" style="background:${th.card};">
           <span class="tp-bar" style="background:${th.acc};"></span>
           <span class="tp-line" style="background:${th.line};"></span>
@@ -4767,13 +4859,30 @@ function renderAll(){
   const header = document.createElement('div');
   header.className = 'view-header';
   const title = viewTitleText();
+  // Когда включён фильтр, заголовок сам по себе не объясняет, почему
+  // видно только часть задач. Добавляем понятную пометку со сбросом.
+  const filterOn = UIState.priorityFilter || UIState.categoryId || UIState.favOnly
+                || UIState.todayOnly || UIState.inboxOnly;
+
   header.innerHTML = `
     <div>
-      <div class="view-title display">${title.split('').map(ch => `<span>${ch === ' ' ? '&nbsp;' : ch}</span>`).join('')}</div>
+      <div class="view-title display">${title.split('').map(ch => `<span>${ch === ' ' ? '&nbsp;' : ch}</span>`).join('')}${
+        filterOn ? `<button class="view-clear" id="viewClearBtn" title="${escapeHtml(t('empty.clearFilters'))}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>` : ''
+      }</div>
       ${UIState.inboxOnly ? `<div class="view-sub">${escapeHtml(t('inbox.sub'))}</div>` : `<div class="view-sub">${escapeHtml(viewSubtitle())}</div>`}
     </div>
   `;
   main.appendChild(header);
+
+  const clearBtn = $('#viewClearBtn', header);
+  if(clearBtn) clearBtn.onclick = () => {
+    haptic('light');
+    UIState.priorityFilter = null; UIState.categoryId = null;
+    UIState.favOnly = UIState.todayOnly = UIState.inboxOnly = false;
+    saveUIState();
+    renderAll();
+  };
 
   const quickAddWrap = document.createElement('div');
   quickAddWrap.innerHTML = `
