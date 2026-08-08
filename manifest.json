@@ -1,33 +1,41 @@
 {
-  "name": "Orbit — цифровая вселенная задач",
+  "id": "orbit-note",
+  "name": "Orbit — задачи и напоминания",
   "short_name": "Orbit",
-  "description": "Задачи, категории и продуктивность в едином премиальном пространстве.",
+  "description": "Задачи, дедлайны и напоминания. Работает без интернета.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
-  "orientation": "portrait-primary",
-  "background_color": "#05060a",
-  "theme_color": "#05060a",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#14161f",
+  "theme_color": "#14161f",
   "lang": "ru",
   "dir": "ltr",
+  "categories": ["productivity", "utilities"],
   "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
     {
-      "src": "icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
+      "name": "Новая задача",
+      "short_name": "Создать",
+      "url": "./index.html#new",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
     },
     {
-      "src": "icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
+      "name": "Сегодня",
+      "short_name": "Сегодня",
+      "url": "./index.html#today",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
     },
     {
-      "src": "icon-512-maskable.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
+      "name": "Неделя",
+      "short_name": "Неделя",
+      "url": "./index.html#week",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
     }
   ]
 }
