@@ -335,9 +335,10 @@ body::before{
 /* Картинка. Края растворяются: маска гасит изображение к границам экрана. */
 .bg-photo{
   position:absolute; inset:-6%;
-  background-size:cover; background-position:center;
+  background-size:cover; background-position:center; background-repeat:no-repeat;
   filter:blur(var(--bg-blur, 14px)) saturate(1.15);
   transform:scale(1.06);
+  opacity:var(--bg-opacity, .55);
   -webkit-mask-image:radial-gradient(ellipse 78% 78% at 50% 45%, #000 32%, transparent 88%);
           mask-image:radial-gradient(ellipse 78% 78% at 50% 45%, #000 32%, transparent 88%);
 }
@@ -348,8 +349,32 @@ body::before{
     linear-gradient(to bottom, var(--bg-0) 0%, transparent 22%, transparent 78%, var(--bg-0) 100%),
     linear-gradient(to right,  var(--bg-0) 0%, transparent 18%, transparent 82%, var(--bg-0) 100%);
 }
-.bg-veil{position:absolute; inset:0; background:var(--bg-0); opacity:var(--bg-veil, .55);}
+/* Вуаль не убирается полностью даже на максимуме: полностью открытая
+   картинка делает текст нечитаемым. Насыщенность управляет прозрачностью
+   самой картинки, а вуаль всегда оставляет запас контраста. */
+.bg-veil{position:absolute; inset:0; background:var(--bg-0); opacity:var(--bg-veil, .58);}
 #bgCanvas{position:absolute; inset:0; width:100%; height:100%;}
+
+/* Когда фон включён, под колонкой с задачами появляется мягкая подложка.
+   Без неё заголовок и подписи лежат прямо на картинке: расчёт контраста
+   давал 2.5 при норме 4.5 — то есть текст просто терялся.
+   Края подложки растворяются, поэтому фон остаётся виден по бокам —
+   он работает как обрамление, а не как полотно поверх интерфейса. */
+html[data-bg="on"] .main-view::before{
+  content:''; position:fixed; z-index:-1;
+  top:52px; bottom:0; left:50%; transform:translateX(-50%);
+  width:min(1240px, 100%);
+  background:var(--bg-0); opacity:.86;
+  -webkit-mask-image:linear-gradient(to right, transparent 0%, #000 9%, #000 91%, transparent 100%);
+          mask-image:linear-gradient(to right, transparent 0%, #000 9%, #000 91%, transparent 100%);
+}
+html[data-bg="on"] .sidebar-left{
+  background:color-mix(in srgb, var(--bg-1) 92%, transparent);
+  backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+}
+@media (max-width: 900px){
+  html[data-bg="on"] .main-view::before{width:100%; -webkit-mask-image:none; mask-image:none; opacity:.9;}
+}
 
 /* Настройки фона */
 .bg-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:7px; margin-bottom:9px;}
@@ -1479,6 +1504,11 @@ kbd{
 </head>
 <body>
 
+<!-- Слой своего фона. Обязательно ВНЕ #app: внутри он оказывался
+     позиционированным элементом поверх непозиционированного содержимого
+     и закрывал собой список задач — именно это и было видно на экране. -->
+<div id="bgLayer"></div>
+
 <!-- ============ Loader ============ -->
 <div id="loader">
   <canvas id="loaderCanvas"></canvas>
@@ -1640,9 +1670,6 @@ kbd{
       </div>
     </div>
   </div>
-
-  <!-- Слой своего фона: под интерфейсом, над атмосферным светом темы -->
-  <div id="bgLayer"></div>
 
   <!-- Состояние синхронизации: показывается только когда есть что сказать -->
   <div class="sync-badge" id="syncBadge">
@@ -2675,9 +2702,20 @@ const BG_PRESETS = [
 let bgAnim = null;          // остановка текущей анимации
 
 function stopBackground(){
+  document.documentElement.dataset.bg = 'off';
   if(bgAnim){ bgAnim(); bgAnim = null; }
   const layer = $('#bgLayer');
   if(layer){ layer.classList.remove('on'); layer.innerHTML = ''; }
+}
+
+/* Насыщенность 0–100 переводим в два значения так, чтобы даже на максимуме
+   оставался запас контраста: картинка не ярче 75%, вуаль не тоньше 25%.
+   Без этого потолка текст на светлой фотографии переставал читаться. */
+function applyBgIntensity(layer){
+  const k = Math.max(0, Math.min(100, Settings.bgStrength ?? 55)) / 100;
+  layer.style.setProperty('--bg-opacity', (0.12 + k * 0.63).toFixed(3));   // 0.12 … 0.75
+  layer.style.setProperty('--bg-veil',    (0.72 - k * 0.47).toFixed(3));   // 0.72 … 0.25
+  layer.style.setProperty('--bg-blur', (Settings.bgBlur ?? 14) + 'px');
 }
 
 async function applyBackground(){
@@ -2686,10 +2724,10 @@ async function applyBackground(){
   stopBackground();
 
   const kind = Settings.bg || 'none';
+  document.documentElement.dataset.bg = kind === 'none' ? 'off' : 'on';
   if(kind === 'none') return;
 
-  layer.style.setProperty('--bg-veil', String(1 - (Settings.bgStrength ?? 55) / 100));
-  layer.style.setProperty('--bg-blur', (Settings.bgBlur ?? 14) + 'px');
+  applyBgIntensity(layer);
 
   if(kind === 'custom'){
     let dataUrl = null;
@@ -2707,7 +2745,7 @@ async function applyBackground(){
   }
 
   // Анимации рисуются на canvas — CSS так плавно не умеет
-  layer.innerHTML = `<canvas id="bgCanvas"></canvas><div class="bg-veil"></div><div class="bg-scrim"></div>`;
+  layer.innerHTML = `<canvas id="bgCanvas" style="opacity:var(--bg-opacity,.55)"></canvas><div class="bg-veil"></div><div class="bg-scrim"></div>`;
   layer.classList.add('on');
   bgAnim = startBackgroundAnimation(kind);
 }
@@ -4709,10 +4747,7 @@ function wireSettingsInputs(){
     el.addEventListener('input', () => {
       Settings[key] = Number(el.value);
       const layer = $('#bgLayer');
-      if(layer){
-        layer.style.setProperty('--bg-veil', String(1 - (Settings.bgStrength ?? 55) / 100));
-        layer.style.setProperty('--bg-blur', (Settings.bgBlur ?? 14) + 'px');
-      }
+      if(layer) applyBgIntensity(layer);
     });
     el.addEventListener('change', () => saveSettings());
   };
