@@ -891,6 +891,42 @@ html[data-theme="light"] .focus-overlay{background:rgba(244,245,249,.93);}
    Скелетоны загрузки. Холодный старт бесплатного Render занимает до
    минуты — пустой экран всё это время убивал первое впечатление.
 ============================================================ */
+/* Предложение установить. Показывается один раз и запоминает отказ:
+   навязчивый баннер раздражает сильнее, чем помогает. */
+.install-bar{
+  position:fixed; left:16px; right:16px; bottom:16px; z-index:210;
+  display:none; align-items:center; gap:12px;
+  padding:12px 14px; border-radius:var(--r-lg);
+  background:var(--bg-1); border:1px solid var(--border-strong);
+  box-shadow:0 18px 44px -14px rgba(0,0,0,.65);
+  transform:translateY(20px); opacity:0;
+  transition:opacity .35s var(--ease), transform .35s var(--ease-soft);
+  max-width:520px; margin:0 auto;
+}
+.install-bar.show{display:flex; opacity:1; transform:translateY(0);}
+.ib-icon{font-size:26px; flex:0 0 auto;}
+.ib-text{flex:1; min-width:0; display:flex; flex-direction:column; gap:2px;}
+.ib-text b{font-size:var(--fs-base); font-weight:600;}
+.ib-text span{font-size:var(--fs-xs); color:var(--text-3); line-height:1.4;}
+.ib-close{width:26px; height:26px; flex:0 0 auto; border-radius:var(--r-sm);
+  display:flex; align-items:center; justify-content:center; color:var(--text-3);}
+.ib-close:hover{background:var(--bg-3); color:var(--text-1);}
+.ib-close svg{width:13px; height:13px;}
+@media (max-width: 520px){
+  .install-bar{flex-wrap:wrap; bottom:calc(var(--bottombar-h) + var(--safe-bottom) + 12px);}
+  .ib-text{flex:1 1 100%; order:1;}
+  .ib-icon{order:0;} .ib-close{order:0; margin-left:auto;}
+  .install-bar .btn.primary{flex:1 1 100%; order:2; justify-content:center;}
+}
+
+.ios-steps{display:flex; flex-direction:column; gap:13px; margin-bottom:6px;}
+.ios-step{display:flex; gap:11px; align-items:flex-start;}
+.ios-n{flex:0 0 24px; height:24px; border-radius:50%; font-size:var(--fs-sm); font-weight:600;
+  display:flex; align-items:center; justify-content:center;
+  background:linear-gradient(160deg, var(--acc-1), var(--acc-2)); color:#fff;}
+.ios-step b{display:block; font-size:var(--fs-base); margin-bottom:2px;}
+.ios-step span{font-size:var(--fs-sm); color:var(--text-3); line-height:1.45;}
+
 /* Индикатор синхронизации. Молчит, когда всё в порядке: постоянная плашка
    «онлайн» — визуальный шум, о котором никто не просил. */
 .sync-badge{
@@ -1241,6 +1277,42 @@ kbd{
     <main class="main-view" id="mainView"></main>
   </div>
 
+  <!-- Предложение установить приложение -->
+  <div class="install-bar" id="installBar">
+    <span class="ib-icon">🪐</span>
+    <div class="ib-text">
+      <b data-i18n="install.title">Установить Orbit</b>
+      <span data-i18n="install.sub">Работает без интернета, открывается с рабочего стола</span>
+    </div>
+    <button class="btn primary" id="installBtn" data-i18n="install.action">Установить</button>
+    <button class="ib-close" id="installDismiss" aria-label="×">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+
+  <!-- Инструкция для iPhone: там нет автоматической установки -->
+  <div class="modal-backdrop" id="iosInstallModal">
+    <div class="modal-card" style="width:360px;">
+      <div class="modal-title"><span data-i18n="install.iosTitle">Установка на iPhone</span>
+        <button class="btn ghost icon" data-close><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+      </div>
+      <div class="ios-steps">
+        <div class="ios-step"><span class="ios-n">1</span>
+          <div><b data-i18n="install.ios1t">Откройте в Safari</b>
+               <span data-i18n="install.ios1s">В других браузерах на iPhone установка недоступна</span></div></div>
+        <div class="ios-step"><span class="ios-n">2</span>
+          <div><b data-i18n="install.ios2t">Нажмите «Поделиться»</b>
+               <span data-i18n="install.ios2s">Квадрат со стрелкой вверх — внизу экрана</span></div></div>
+        <div class="ios-step"><span class="ios-n">3</span>
+          <div><b data-i18n="install.ios3t">«На экран "Домой"»</b>
+               <span data-i18n="install.ios3s">Пролистайте список вниз и подтвердите</span></div></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn primary" data-close data-i18n="common.close">Закрыть</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Состояние синхронизации: показывается только когда есть что сказать -->
   <div class="sync-badge" id="syncBadge">
     <span class="sb-dot"></span>
@@ -1457,6 +1529,10 @@ kbd{
 
     <div class="set-group">
       <div class="set-label" data-i18n="settings.data">Данные</div>
+      <button class="btn block" id="btnInstallApp" style="justify-content:center; margin-bottom:7px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="3"/><path d="M12 6v8M9 11l3 3 3-3"/></svg>
+        <span data-i18n="install.action">Установить приложение</span>
+      </button>
       <button class="btn block" id="btnSyncNow" style="justify-content:center; margin-bottom:7px;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 01-9 9 9 9 0 01-8-4.9M3 12a9 9 0 019-9 9 9 0 018 4.9"/><path d="M21 3v6h-6M3 21v-6h6"/></svg>
         <span data-i18n="settings.syncNow">Синхронизировать сейчас</span>
@@ -1622,6 +1698,18 @@ const I18N = {
     'sync.pending': 'Не отправлено: {n}',
     'sync.done': 'Синхронизировано',
     'sync.offlineStart': 'Сервер недоступен — работаем офлайн',
+    'install.title': 'Установить Orbit',
+    'install.sub': 'Работает без интернета, открывается с рабочего стола',
+    'install.action': 'Установить приложение',
+    'install.done': 'Готово! Orbit теперь на вашем устройстве',
+    'install.unsupported': 'Этот браузер не поддерживает установку. Попробуйте Chrome или Safari.',
+    'install.iosTitle': 'Установка на iPhone',
+    'install.ios1t': 'Откройте в Safari',
+    'install.ios1s': 'В других браузерах на iPhone установка недоступна',
+    'install.ios2t': 'Нажмите «Поделиться»',
+    'install.ios2s': 'Квадрат со стрелкой вверх — внизу экрана',
+    'install.ios3t': '«На экран Домой»',
+    'install.ios3s': 'Пролистайте список вниз и подтвердите',
     'settings.syncNow': 'Синхронизировать сейчас',
     'settings.export': 'Скачать все данные',
     'settings.exporting': 'Готовим файл…',
@@ -1823,6 +1911,18 @@ const I18N = {
     'sync.pending': 'Pending: {n}',
     'sync.done': 'Synced',
     'sync.offlineStart': 'Server unavailable — working offline',
+    'install.title': 'Install Orbit',
+    'install.sub': 'Works offline, opens from your home screen',
+    'install.action': 'Install app',
+    'install.done': 'Done! Orbit is now on your device',
+    'install.unsupported': 'This browser does not support installing. Try Chrome or Safari.',
+    'install.iosTitle': 'Install on iPhone',
+    'install.ios1t': 'Open in Safari',
+    'install.ios1s': 'Other iPhone browsers cannot install apps',
+    'install.ios2t': 'Tap Share',
+    'install.ios2s': 'The square with an arrow, at the bottom',
+    'install.ios3t': 'Add to Home Screen',
+    'install.ios3s': 'Scroll down the list and confirm',
     'settings.syncNow': 'Sync now',
     'settings.export': 'Download all data',
     'settings.exporting': 'Preparing file…',
@@ -5334,6 +5434,99 @@ function isTyping(el){
   return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el.isContentEditable;
 }
 
+/* ---------------------------------------------------------------------------
+   Установка приложения на устройство.
+
+   Android и десктоп дают событие beforeinstallprompt — тогда установка
+   происходит в одно нажатие. iPhone такого не даёт вообще: там нужно
+   вручную через «Поделиться → На экран Домой», причём только в Safari.
+   Внутри Telegram установка невозможна, поэтому там не предлагаем.
+--------------------------------------------------------------------------- */
+const INSTALL_DISMISS_KEY = STORAGE_PREFIX + 'installDismissed';
+let deferredInstall = null;
+
+function isStandalone(){
+  return window.matchMedia && window.matchMedia('(display-mode: standalone)').matches
+    || window.navigator.standalone === true;
+}
+
+function isIOS(){
+  return /iPad|iPhone|iPod/.test(navigator.userAgent)
+    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
+function canOfferInstall(){
+  if(isInTelegram) return false;              // в Mini App установить нельзя
+  if(isStandalone()) return false;            // уже установлено
+  if(localStorage.getItem(INSTALL_DISMISS_KEY)) return false;
+  return true;
+}
+
+function showInstallBar(){
+  if(!canOfferInstall()) return;
+  const bar = $('#installBar');
+  if(!bar) return;
+  // Не выпрыгиваем сразу: сначала человек должен увидеть само приложение.
+  setTimeout(() => bar.classList.add('show'), 2500);
+}
+
+function hideInstallBar(remember){
+  const bar = $('#installBar');
+  if(bar) bar.classList.remove('show');
+  if(remember) localStorage.setItem(INSTALL_DISMISS_KEY, '1');
+}
+
+async function runInstall(){
+  haptic('light');
+
+  if(deferredInstall){
+    deferredInstall.prompt();
+    const choice = await deferredInstall.userChoice.catch(() => null);
+    deferredInstall = null;
+    hideInstallBar(true);
+    if(choice && choice.outcome === 'accepted') toast(t('install.done'), 'ok');
+    return;
+  }
+
+  if(isIOS()){
+    hideInstallBar(false);
+    $('#iosInstallModal').classList.add('show');
+    return;
+  }
+
+  // Ни события, ни iPhone — значит, браузер установку не поддерживает
+  toast(t('install.unsupported'), 'warn');
+  hideInstallBar(true);
+}
+
+function wireInstall(){
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();                       // свой баннер вместо системного
+    deferredInstall = e;
+    showInstallBar();
+  });
+
+  window.addEventListener('appinstalled', () => {
+    hideInstallBar(true);
+    toast(t('install.done'), 'ok');
+  });
+
+  const btn = $('#installBtn');
+  if(btn) btn.onclick = runInstall;
+  const dismiss = $('#installDismiss');
+  if(dismiss) dismiss.onclick = () => { haptic('light'); hideInstallBar(true); };
+
+  // На iPhone события beforeinstallprompt не будет никогда — предлагаем сами
+  if(isIOS() && canOfferInstall()) showInstallBar();
+
+  // Кнопка в настройках работает всегда, даже если баннер закрыли
+  const setBtn = $('#btnInstallApp');
+  if(setBtn){
+    setBtn.style.display = (isInTelegram || isStandalone()) ? 'none' : '';
+    setBtn.onclick = runInstall;
+  }
+}
+
 function wireHotkeys(){
   document.addEventListener('keydown', (e) => {
     // Esc работает всегда: закрывает то, что открыто сверху
@@ -5403,6 +5596,7 @@ function wireStaticEvents(){
   $('#settingsNavMobile').onclick = () => { haptic('light'); openSettingsModal(); };
   wireSettingsInputs();
   wireHotkeys();
+  wireInstall();
   $('#btnAddCategory').onclick = openCategoryModal;
 
   $('#btnNewTask').onclick = () => openTaskModal(null);
