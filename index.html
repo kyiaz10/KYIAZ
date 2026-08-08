@@ -1174,6 +1174,115 @@ html[data-theme="light"] .tw-frame, html[data-theme="paper"] .tw-frame, html[dat
    навязчивый баннер раздражает сильнее, чем помогает. */
 /* Крупный экран предложения установки. Раньше это была узкая полоска
    внизу — её просто не замечали. */
+/* ============================================================
+   Уведомления о дедлайнах.
+
+   Не тост в углу, а крупная карточка, которую нельзя не заметить:
+   иконка, отсчёт и кнопки прямо в ней. Появляется с пружиной.
+============================================================ */
+.notif-stack{
+  position:fixed; top:calc(var(--safe-top) + 62px); right:16px; z-index:280;
+  display:flex; flex-direction:column; gap:10px;
+  width:330px; max-width:calc(100vw - 32px);
+  pointer-events:none;
+}
+.notif{
+  pointer-events:auto; position:relative; overflow:hidden;
+  border-radius:16px; padding:14px 15px;
+  background:var(--bg-1); border:1px solid var(--border-strong);
+  box-shadow:0 20px 46px -14px rgba(0,0,0,.6);
+  transform:translateX(110%) scale(.94); opacity:0;
+  animation:notifIn .62s cubic-bezier(.2,1.5,.4,1) forwards;
+}
+.notif.leaving{animation:notifOut .32s var(--ease) forwards;}
+@keyframes notifIn{to{transform:translateX(0) scale(1); opacity:1;}}
+@keyframes notifOut{to{transform:translateX(110%) scale(.94); opacity:0;}}
+
+/* Цветная полоса слева и мягкое свечение — по срочности */
+.notif::before{
+  content:''; position:absolute; left:0; top:0; bottom:0; width:4px;
+  background:var(--n-color, var(--acc-1));
+}
+.notif::after{
+  content:''; position:absolute; inset:0; pointer-events:none;
+  background:radial-gradient(ellipse 70% 100% at 0% 50%,
+             color-mix(in srgb, var(--n-color, var(--acc-1)) 16%, transparent), transparent 70%);
+}
+.notif.urgent{--n-color:var(--red);}
+.notif.soon{--n-color:var(--amber);}
+.notif.done{--n-color:var(--emerald);}
+
+.notif-top{display:flex; align-items:flex-start; gap:11px; position:relative; z-index:1;}
+.notif-emoji{
+  flex:0 0 40px; height:40px; border-radius:12px; font-size:19px;
+  display:flex; align-items:center; justify-content:center;
+  background:color-mix(in srgb, var(--n-color, var(--acc-1)) 18%, transparent);
+  animation:notifPop .7s cubic-bezier(.2,1.6,.4,1) .1s backwards;
+}
+@keyframes notifPop{from{transform:scale(0) rotate(-25deg);} to{transform:scale(1) rotate(0);}}
+.notif-body{flex:1; min-width:0;}
+.notif-kicker{
+  font-size:10px; font-weight:700; letter-spacing:.09em; text-transform:uppercase;
+  color:var(--n-color, var(--acc-1)); margin-bottom:3px;
+}
+.notif-title{font-size:var(--fs-md); font-weight:600; line-height:1.35; word-break:break-word;}
+.notif-sub{font-size:var(--fs-sm); color:var(--text-3); margin-top:3px;}
+.notif-close{
+  flex:0 0 auto; width:24px; height:24px; border-radius:var(--r-sm);
+  display:flex; align-items:center; justify-content:center; color:var(--text-3);
+}
+.notif-close:hover{background:var(--bg-3); color:var(--text-1);}
+.notif-close svg{width:12px; height:12px;}
+.notif-actions{display:flex; gap:7px; margin-top:12px; position:relative; z-index:1;}
+.notif-actions .btn{flex:1; justify-content:center; padding:8px; font-size:var(--fs-sm);}
+/* Полоса времени жизни */
+.notif-life{
+  position:absolute; left:0; bottom:0; height:2px; width:100%;
+  background:var(--n-color, var(--acc-1)); opacity:.5;
+  transform-origin:left; animation:notifLife linear forwards;
+}
+@keyframes notifLife{from{transform:scaleX(1);} to{transform:scaleX(0);}}
+
+/* Разлетающиеся частицы при выполнении задачи */
+.spark{
+  position:fixed; width:7px; height:7px; border-radius:2px; z-index:290;
+  pointer-events:none; animation:sparkFly .85s cubic-bezier(.2,.8,.3,1) forwards;
+}
+@keyframes sparkFly{
+  0%{transform:translate(0,0) scale(1) rotate(0); opacity:1;}
+  100%{transform:translate(var(--dx), var(--dy)) scale(.2) rotate(var(--rot)); opacity:0;}
+}
+html[data-anim="off"] .spark{display:none;}
+
+@media (max-width: 620px){
+  .notif-stack{left:12px; right:12px; width:auto;
+    top:calc(var(--safe-top) + 56px);}
+}
+
+/* Профиль */
+.pf-head{display:flex; flex-direction:column; align-items:center; text-align:center; margin-bottom:18px;}
+.pf-avatar{
+  width:62px; height:62px; border-radius:50%; margin-bottom:11px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:24px; font-weight:600; color:#fff;
+  background:linear-gradient(160deg, var(--acc-1), var(--acc-2));
+  box-shadow:0 10px 26px -8px color-mix(in srgb, var(--acc-2) 70%, transparent);
+}
+.pf-name{font-size:var(--fs-md); font-weight:600;}
+.pf-handle{font-size:var(--fs-sm); color:var(--text-3); margin-top:2px;}
+.pf-rows{display:flex; flex-direction:column; gap:6px; margin-bottom:6px;}
+.pf-row{
+  display:flex; align-items:center; gap:10px; padding:10px 12px;
+  border-radius:var(--r-md); background:var(--bg-2); border:1px solid var(--glass-border);
+}
+.pf-row .k{font-size:var(--fs-sm); color:var(--text-3); flex:0 0 auto;}
+.pf-row .v{font-size:var(--fs-base); flex:1; min-width:0; text-align:right;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-variant-numeric:tabular-nums;}
+.pf-copy{flex:0 0 auto; width:24px; height:24px; border-radius:var(--r-sm);
+  display:flex; align-items:center; justify-content:center; color:var(--text-3);}
+.pf-copy:hover{background:var(--bg-3); color:var(--acc-1);}
+.pf-copy svg{width:12px; height:12px;}
+
 .install-hero{
   position:fixed; inset:0; z-index:260;
   display:none; align-items:center; justify-content:center; padding:20px;
@@ -1540,20 +1649,16 @@ kbd{
     <div class="brand"><img class="brand-glyph" src="icon-192.png" alt="Orbit">ORBIT</div>
     <div class="topbar-spacer"></div>
     <div class="topbar-actions">
-      <div class="lang-switch" id="langSwitchApp">
-        <button data-lang="ru">RU</button>
-        <button data-lang="en">EN</button>
-      </div>
       <button class="btn ghost icon" id="btnSettings" data-i18n-title="settings.title" title="Настройки">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.9l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.9-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1A1.7 1.7 0 008.9 19a1.7 1.7 0 00-1.9.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.9 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1A1.7 1.7 0 004.6 8.9a1.7 1.7 0 00-.3-1.9l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.9.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.9-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.9V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg>
       </button>
       <button class="btn ghost icon" id="btnSessions" data-i18n-title="sessions.title" title="Активные сессии">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 21h8M12 18v3"/></svg>
       </button>
-      <div class="user-pill" id="userPill">
+      <button class="user-pill" id="userPill" title="Профиль">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
         <span class="uid-text" id="userIdLabel">—</span>
-      </div>
+      </button>
       <button class="btn ghost icon" id="btnLogout" data-i18n-title="nav.logout" title="Выйти"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg></button>
       <button class="btn primary" id="btnNewTask"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg><span class="lbl-text" data-i18n="task.new">Новая задача</span></button>
     </div>
@@ -1640,6 +1745,9 @@ kbd{
       </div>
     </div>
   </div>
+
+  <!-- Уведомления о дедлайнах -->
+  <div class="notif-stack" id="notifStack"></div>
 
   <!-- Состояние синхронизации: показывается только когда есть что сказать -->
   <div class="sync-badge" id="syncBadge">
@@ -1789,6 +1897,28 @@ kbd{
   </div>
 </div>
 
+<!-- ============ Профиль ============ -->
+<div class="modal-backdrop" id="profileModal">
+  <div class="modal-card" style="width:390px;">
+    <div class="modal-title"><span data-i18n="profile.title">Профиль</span>
+      <button class="btn ghost icon" data-close><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </div>
+
+    <div class="pf-head">
+      <div class="pf-avatar" id="pfAvatar">?</div>
+      <div class="pf-name" id="pfName">—</div>
+      <div class="pf-handle" id="pfHandle"></div>
+    </div>
+
+    <div class="pf-rows" id="pfRows"></div>
+
+    <div class="modal-footer">
+      <button class="btn danger push-left" id="pfLogout" data-i18n="nav.logout">Выйти</button>
+      <button class="btn primary" data-close data-i18n="common.close">Закрыть</button>
+    </div>
+  </div>
+</div>
+
 <!-- ============ Редактирование категории ============ -->
 <div class="modal-backdrop" id="categoryEditModal">
   <div class="modal-card" style="width:380px;">
@@ -1813,6 +1943,14 @@ kbd{
   <div class="modal-card" style="width:460px;">
     <div class="modal-title"><span data-i18n="settings.title">Настройки</span>
       <button class="btn ghost icon" data-close><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </div>
+
+    <div class="set-group">
+      <div class="set-label" data-i18n="settings.language">Язык</div>
+      <div class="segmented" id="langSeg">
+        <button data-lang="ru">Русский</button>
+        <button data-lang="en">English</button>
+      </div>
     </div>
 
     <div class="set-group">
@@ -2016,7 +2154,35 @@ const I18N = {
     'nav.inbox': 'Входящие',
     'view.timelineMode': 'День',
     'settings.title': 'Настройки',
+    'settings.language': 'Язык',
     'settings.theme': 'Тема оформления',
+    'profile.title': 'Профиль',
+    'profile.username': 'Telegram',
+    'profile.tgId': 'ID в Telegram',
+    'profile.orbitId': 'ID в Orbit',
+    'profile.since': 'С нами с',
+    'profile.tasks': 'Всего задач',
+    'profile.type': 'Тип входа',
+    'profile.typeGuest': 'Гостевой — данные только в этом браузере',
+    'profile.copy': 'Скопировать',
+    'profile.copied': 'Скопировано',
+    'profile.copyFail': 'Не удалось скопировать',
+    'notif.soonKicker': 'Скоро дедлайн',
+    'notif.soonSub': 'Осталось {n} мин',
+    'notif.nowKicker': 'Время пришло',
+    'notif.nowSub': 'Дедлайн наступил прямо сейчас',
+    'notif.done': 'Готово',
+    'notif.snooze': 'Через час',
+    'notif.snoozed': 'Напомню через час',
+    'notif.niceKicker': 'Отличный старт',
+    'notif.firstTitle': 'Первая задача закрыта!',
+    'notif.firstSub': 'Осталось на сегодня: {n}',
+    'notif.clearKicker': 'День закрыт',
+    'notif.clearTitle': 'Все задачи на сегодня выполнены',
+    'notif.clearSub': 'Можно выдохнуть 🌿',
+    'notif.milestoneKicker': 'Веха',
+    'notif.milestoneTitle': 'Уже {n} выполненных задач',
+    'notif.milestoneSub': 'Так держать!',
     'settings.accent': 'Акцентный цвет',
     'settings.accentAuto': 'Авто — цвет из темы',
     'settings.density': 'Плотность',
@@ -2244,7 +2410,35 @@ const I18N = {
     'nav.inbox': 'Inbox',
     'view.timelineMode': 'Day',
     'settings.title': 'Settings',
+    'settings.language': 'Language',
     'settings.theme': 'Theme',
+    'profile.title': 'Profile',
+    'profile.username': 'Telegram',
+    'profile.tgId': 'Telegram ID',
+    'profile.orbitId': 'Orbit ID',
+    'profile.since': 'Member since',
+    'profile.tasks': 'Tasks total',
+    'profile.type': 'Sign-in type',
+    'profile.typeGuest': 'Guest — data lives only in this browser',
+    'profile.copy': 'Copy',
+    'profile.copied': 'Copied',
+    'profile.copyFail': 'Could not copy',
+    'notif.soonKicker': 'Deadline soon',
+    'notif.soonSub': '{n} min left',
+    'notif.nowKicker': 'Time is up',
+    'notif.nowSub': 'The deadline is right now',
+    'notif.done': 'Done',
+    'notif.snooze': 'In an hour',
+    'notif.snoozed': 'I will remind you in an hour',
+    'notif.niceKicker': 'Great start',
+    'notif.firstTitle': 'First task done!',
+    'notif.firstSub': 'Left for today: {n}',
+    'notif.clearKicker': 'Day complete',
+    'notif.clearTitle': 'Everything for today is done',
+    'notif.clearSub': 'Time to relax 🌿',
+    'notif.milestoneKicker': 'Milestone',
+    'notif.milestoneTitle': '{n} tasks completed',
+    'notif.milestoneSub': 'Keep it up!',
     'settings.accent': 'Accent color',
     'settings.accentAuto': 'Auto — color from theme',
     'settings.density': 'Density',
@@ -3709,8 +3903,11 @@ function showSkeletons(){
     </div>`;
 }
 
+let dueWatcherStarted = false;
+
 function enterApp(){
   sessionExpiredHandled = false;
+  if(!dueWatcherStarted){ dueWatcherStarted = true; startDueWatcher(); }
   $('#loginScreen').classList.remove('show');
   $('#app').classList.add('ready');
   applyStartParam();
@@ -4433,7 +4630,299 @@ async function exportAllData(){
   }
 }
 
+/* ---------------------------------------------------------------------------
+   Уведомления о дедлайнах.
+
+   Два уровня. Внутри приложения — крупная карточка с кнопками. Когда
+   вкладка свёрнута — системное уведомление браузера, чтобы напоминание
+   дошло, даже если Orbit не на экране.
+--------------------------------------------------------------------------- */
+const NOTIFIED_KEY = STORAGE_PREFIX + 'notified';
+const NOTIF_BEFORE_MIN = 60;          // предупреждаем за час
+
+/* Что уже показали — иначе одно и то же напоминание всплывало бы
+   каждую минуту. Хранится по идентификатору задачи и порогу. */
+function loadNotified(){
+  try{ return new Set(JSON.parse(localStorage.getItem(NOTIFIED_KEY) || '[]')); }
+  catch(_e){ return new Set(); }
+}
+function saveNotified(set){
+  // Не даём списку расти бесконечно
+  const arr = Array.from(set).slice(-300);
+  try{ localStorage.setItem(NOTIFIED_KEY, JSON.stringify(arr)); }catch(_e){}
+}
+
+function askNotificationPermission(){
+  if(!('Notification' in window)) return;
+  if(Notification.permission === 'default'){
+    // Спрашиваем не сразу при загрузке: браузеры глушат такие запросы,
+    // а человек ещё не понимает, зачем ему разрешать.
+    setTimeout(() => { try{ Notification.requestPermission(); }catch(_e){} }, 20000);
+  }
+}
+
+function systemNotify(title, body){
+  try{
+    if(!('Notification' in window) || Notification.permission !== 'granted') return;
+    if(!document.hidden) return;         // приложение открыто — хватит карточки
+    const n = new Notification(title, {
+      body, icon: 'icon-192.png', badge: 'icon-192.png',
+      tag: 'orbit-due', renotify: true,
+    });
+    n.onclick = () => { window.focus(); n.close(); };
+  }catch(_e){}
+}
+
+/* Крупная карточка. kind: 'urgent' | 'soon' | 'done' */
+function showNotification({kind = 'soon', emoji = '⏰', kicker, title, sub,
+                           actions = [], life = 12000}){
+  const stack = $('#notifStack');
+  if(!stack) return;
+
+  const card = document.createElement('div');
+  card.className = `notif ${kind}`;
+  card.innerHTML = `
+    <div class="notif-top">
+      <div class="notif-emoji">${emoji}</div>
+      <div class="notif-body">
+        ${kicker ? `<div class="notif-kicker">${escapeHtml(kicker)}</div>` : ''}
+        <div class="notif-title">${escapeHtml(title)}</div>
+        ${sub ? `<div class="notif-sub">${escapeHtml(sub)}</div>` : ''}
+      </div>
+      <button class="notif-close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </div>
+    ${actions.length ? `<div class="notif-actions">${actions.map((a, i) =>
+        `<button class="btn ${a.primary ? 'primary' : ''}" data-i="${i}">${escapeHtml(a.label)}</button>`
+      ).join('')}</div>` : ''}
+    <div class="notif-life" style="animation-duration:${life}ms"></div>`;
+
+  const close = () => {
+    if(card.classList.contains('leaving')) return;
+    card.classList.add('leaving');
+    setTimeout(() => card.remove(), 340);
+  };
+
+  $('.notif-close', card).onclick = close;
+  $$('.notif-actions .btn', card).forEach(b => b.onclick = () => {
+    haptic('light');
+    const a = actions[Number(b.dataset.i)];
+    close();
+    if(a && a.onClick) a.onClick();
+  });
+
+  stack.appendChild(card);
+  haptic(kind === 'urgent' ? 'warning' : 'light');
+  setTimeout(close, life);
+  return close;
+}
+
+/* Проверка дедлайнов. Раз в минуту — чаще незачем. */
+function checkDueTasks(){
+  if(!State.tasks || !State.tasks.length) return;
+  const notified = loadNotified();
+  const now = Date.now();
+  let changed = false;
+
+  for(const tk of State.tasks){
+    if(tk.completed || !tk.due_date) continue;
+    if(tk.due_date.length <= 10) continue;        // без времени — не дёргаем
+
+    const due = new Date(tk.due_date.replace(' ', 'T')).getTime();
+    if(isNaN(due)) continue;
+    const minutesLeft = (due - now) / 60000;
+
+    // Два порога: за час и в момент дедлайна
+    let stage = null;
+    if(minutesLeft <= 0 && minutesLeft > -180) stage = 'now';
+    else if(minutesLeft > 0 && minutesLeft <= NOTIF_BEFORE_MIN) stage = 'soon';
+    if(!stage) continue;
+
+    const key = `${tk.id}:${stage}`;
+    if(notified.has(key)) continue;
+    notified.add(key);
+    changed = true;
+
+    const urgent = stage === 'now';
+    const label = urgent ? t('notif.nowKicker') : t('notif.soonKicker');
+    const sub = urgent
+      ? t('notif.nowSub')
+      : t('notif.soonSub', {n: Math.max(1, Math.round(minutesLeft))});
+
+    showNotification({
+      kind: urgent ? 'urgent' : 'soon',
+      emoji: urgent ? '🔥' : '⏰',
+      kicker: label,
+      title: (tk.icon ? tk.icon + ' ' : '') + tk.text,
+      sub,
+      life: urgent ? 20000 : 14000,
+      actions: [
+        {label: t('notif.done'), primary: true, onClick: () => {
+          const fresh = State.tasks.find(x => x.id === tk.id);
+          if(fresh && !fresh.completed) toggleTaskDone(fresh);
+        }},
+        {label: t('notif.snooze'), onClick: () => snoozeTask(tk.id, 60)},
+      ],
+    });
+
+    systemNotify(urgent ? t('notif.nowKicker') : t('notif.soonKicker'), tk.text);
+  }
+
+  if(changed) saveNotified(notified);
+}
+
+/* Отложить задачу на N минут от текущего момента */
+async function snoozeTask(taskId, minutes){
+  const tk = State.tasks.find(x => x.id === taskId);
+  if(!tk) return;
+  const d = new Date(Date.now() + minutes * 60000);
+  const pad = n => String(n).padStart(2, '0');
+  const due = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:00`;
+
+  tk.due_date = due;
+  tk.updated_at = new Date().toISOString();
+  // Разрешаем напомнить снова: старые отметки для этой задачи снимаем
+  const notified = loadNotified();
+  notified.delete(`${taskId}:soon`);
+  notified.delete(`${taskId}:now`);
+  saveNotified(notified);
+
+  renderAll();
+  await DB.put('tasks', stripRuntime(tk)).catch(() => {});
+  await Outbox.add({type: 'task.update', id: taskId, payload: {due_date: due}});
+  toast(t('notif.snoozed'), 'ok');
+  syncNow();
+}
+
+/* Частицы при выполнении задачи — маленький праздник за закрытую задачу */
+function burstSparks(el){
+  if(!Settings.anim || !el) return;
+  const r = el.getBoundingClientRect();
+  const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+  const colors = ['#5ee9a8', '#7d93ff', '#ffd166', '#ff8fb8', '#4fd1e0'];
+
+  for(let i = 0; i < 14; i++){
+    const sp = document.createElement('div');
+    sp.className = 'spark';
+    const angle = (Math.PI * 2 * i) / 14 + Math.random() * 0.5;
+    const dist = 45 + Math.random() * 55;
+    sp.style.left = cx + 'px';
+    sp.style.top = cy + 'px';
+    sp.style.background = colors[i % colors.length];
+    sp.style.setProperty('--dx', Math.cos(angle) * dist + 'px');
+    sp.style.setProperty('--dy', Math.sin(angle) * dist + 'px');
+    sp.style.setProperty('--rot', Math.round(Math.random() * 540 - 270) + 'deg');
+    sp.style.animationDelay = (i * 8) + 'ms';
+    document.body.appendChild(sp);
+    setTimeout(() => sp.remove(), 1100);
+  }
+}
+
+/* Похвала за выполненную задачу. Обычный тост показываем всегда, а
+   крупную карточку — только на вехах: каждый день по первой закрытой
+   задаче и на круглых числах. Иначе праздник быстро приедается. */
+function celebrateCompletion(){
+  const today = ymd(new Date());
+  const doneToday = State.tasks.filter(x =>
+    x.completed && x.completed_at && parseServerTime(x.completed_at) &&
+    ymd(parseServerTime(x.completed_at)) === today).length;
+
+  const totalDone = State.tasks.filter(x => x.completed).length;
+  const datedToday = State.tasks.filter(x => x.due_date && x.due_date.slice(0,10) <= today);
+  const leftToday = datedToday.filter(x => !x.completed).length;
+
+  // «День закрыт» уместно только когда на сегодня вообще что-то было
+  // запланировано. Иначе оно выскакивало у любого, у кого просто нет
+  // задач с датами, — и теряло всякий смысл.
+  const dayCleared = datedToday.length > 0 && leftToday === 0;
+  const milestone = totalDone > 0 && totalDone % 10 === 0;
+
+  if(doneToday === 1 || milestone || dayCleared){
+    let emoji = '✅', kicker = t('notif.niceKicker'), title, sub = '';
+
+    if(dayCleared){
+      emoji = '🎉'; kicker = t('notif.clearKicker');
+      title = t('notif.clearTitle');
+      sub = t('notif.clearSub');
+    }else if(milestone){
+      emoji = '🏆'; kicker = t('notif.milestoneKicker');
+      title = t('notif.milestoneTitle', {n: totalDone});
+      sub = t('notif.milestoneSub');
+    }else{
+      emoji = '💪';
+      title = t('notif.firstTitle');
+      sub = leftToday ? t('notif.firstSub', {n: leftToday}) : '';
+    }
+
+    showNotification({kind:'done', emoji, kicker, title, sub, life: 6500});
+    haptic('success');
+  }else{
+    toast(t('task.done'), 'ok');
+  }
+}
+
+function startDueWatcher(){
+  askNotificationPermission();
+  checkDueTasks();
+  setInterval(checkDueTasks, 60000);
+  // Вернулись на вкладку — проверяем сразу, пока таймер спал
+  document.addEventListener('visibilitychange', () => { if(!document.hidden) checkDueTasks(); });
+}
+
+/* Профиль. Раньше плашка с иконкой человека вообще не реагировала на
+   нажатие — обработчика у неё не было. */
+function openProfileModal(){
+  const u = State.user || {};
+  const name = (u.display_name || '').trim() || t('user.guest');
+  const isGuest = /^(Гость|Guest)\s/i.test(u.display_name || '') || !u.telegram_id;
+
+  $('#pfAvatar').textContent = (name[0] || '?').toUpperCase();
+  $('#pfName').textContent = /^(Гость|Guest)\s/i.test(u.display_name || '') ? t('user.guest') : name;
+  $('#pfHandle').textContent = u.telegram_username ? '@' + u.telegram_username : '';
+
+  const rows = [];
+  if(u.telegram_username) rows.push({k: t('profile.username'), v: '@' + u.telegram_username, copy: true});
+  if(u.telegram_id)       rows.push({k: t('profile.tgId'),     v: String(u.telegram_id), copy: true});
+  rows.push({k: t('profile.orbitId'), v: '#' + (u.id ?? '—'), copy: true});
+  if(u.created_at){
+    const d = parseServerTime(u.created_at);
+    if(d) rows.push({k: t('profile.since'),
+                     v: d.toLocaleDateString(currentLang === 'ru' ? 'ru-RU' : 'en-US',
+                        {day:'numeric', month:'long', year:'numeric'})});
+  }
+  rows.push({k: t('profile.tasks'), v: String(State.tasks.length)});
+  if(isGuest) rows.push({k: t('profile.type'), v: t('profile.typeGuest')});
+
+  const copySvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>';
+  $('#pfRows').innerHTML = rows.map(r => `
+    <div class="pf-row">
+      <span class="k">${escapeHtml(r.k)}</span>
+      <span class="v">${escapeHtml(r.v)}</span>
+      ${r.copy ? `<button class="pf-copy" data-copy="${escapeHtml(r.v)}" title="${escapeHtml(t('profile.copy'))}">${copySvg}</button>` : ''}
+    </div>`).join('');
+
+  $$('.pf-copy', $('#pfRows')).forEach(b => b.onclick = async () => {
+    try{
+      await navigator.clipboard.writeText(b.dataset.copy);
+      haptic('success');
+      toast(t('profile.copied'), 'ok');
+    }catch(_e){ toast(t('profile.copyFail'), 'warn'); }
+  });
+
+  $('#profileModal').classList.add('show');
+}
+
 function wireSettingsInputs(){
+  // Язык переехал из шапки в настройки: на телефоне он занимал место,
+  // а меняют его один раз за всё время.
+  $$('#langSeg button').forEach(b => {
+    b.classList.toggle('on', b.dataset.lang === currentLang);
+    b.onclick = () => {
+      haptic('light');
+      setLang(b.dataset.lang);
+      renderSettingsModal();
+      renderAll();
+    };
+  });
   $('#btnExport').onclick = exportAllData;
 
   $('#btnSyncNow').onclick = () => { haptic('light'); syncNow({silent: false}); };
@@ -4892,6 +5381,7 @@ function renderTasksGrid(container){
       if(!tk.completed){
         const chk = e.currentTarget;
         chk.classList.add('burst');
+        burstSparks(chk);
         setTimeout(() => chk.classList.remove('burst'), 600);
       }
       toggleTaskDone(tk);
@@ -5523,7 +6013,12 @@ async function toggleTaskDone(tk){
 
   await DB.put('tasks', stripRuntime(tk)).catch(() => {});
   await Outbox.add({type: 'task.update', id: tk.id, payload: {completed: newVal}});
-  toast(newVal ? t('task.done') : t('task.undone'), 'ok');
+
+  if(newVal){
+    celebrateCompletion();
+  }else{
+    toast(t('task.undone'), 'ok');
+  }
   syncNow();
 }
 
@@ -6342,6 +6837,8 @@ function wireStaticEvents(){
     renderAll();
   };
   $('#btnSettings').onclick = () => { haptic('light'); openSettingsModal(); };
+  $('#userPill').onclick = () => { haptic('light'); openProfileModal(); };
+  $('#pfLogout').onclick = () => { $('#profileModal').classList.remove('show'); logout(); };
   $('#settingsNavMobile').onclick = () => { haptic('light'); openSettingsModal(); };
   wireSettingsInputs();
   wireHotkeys();
