@@ -891,6 +891,29 @@ html[data-theme="light"] .focus-overlay{background:rgba(244,245,249,.93);}
    Скелетоны загрузки. Холодный старт бесплатного Render занимает до
    минуты — пустой экран всё это время убивал первое впечатление.
 ============================================================ */
+/* Индикатор синхронизации. Молчит, когда всё в порядке: постоянная плашка
+   «онлайн» — визуальный шум, о котором никто не просил. */
+.sync-badge{
+  position:fixed; left:50%; top:14px; z-index:200;
+  transform:translateX(-50%) translateY(-14px);
+  display:flex; align-items:center; gap:8px;
+  padding:7px 14px; border-radius:20px; font-size:var(--fs-sm);
+  background:var(--bg-2); border:1px solid var(--border-strong);
+  box-shadow:var(--sh-3); color:var(--text-2);
+  opacity:0; pointer-events:none;
+  transition:opacity .3s var(--ease), transform .3s var(--ease-soft);
+}
+.sync-badge.show{opacity:1; transform:translateX(-50%) translateY(0);}
+.sb-dot{width:7px; height:7px; border-radius:50%; background:var(--amber); flex:0 0 auto;}
+.sync-badge.offline .sb-dot{background:var(--text-3);}
+.sync-badge.syncing .sb-dot{background:var(--sky); animation:sbPulse 1.1s var(--ease-soft) infinite;}
+@keyframes sbPulse{0%,100%{opacity:1; transform:scale(1);} 50%{opacity:.4; transform:scale(.75);}}
+@media (max-width: 780px){
+  .sync-badge{top:auto; bottom:calc(var(--bottombar-h) + var(--safe-bottom) + 12px);
+    transform:translateX(-50%) translateY(14px);}
+  .sync-badge.show{transform:translateX(-50%) translateY(0);}
+}
+
 .skel{
   border-radius:var(--r-md); background:var(--bg-2);
   border:1px solid var(--glass-border); padding:13px 14px;
@@ -1218,6 +1241,12 @@ kbd{
     <main class="main-view" id="mainView"></main>
   </div>
 
+  <!-- Состояние синхронизации: показывается только когда есть что сказать -->
+  <div class="sync-badge" id="syncBadge">
+    <span class="sb-dot"></span>
+    <span class="sb-text"></span>
+  </div>
+
   <!-- Нижняя навигация (мобильные / Telegram) -->
   <nav class="bottom-nav" id="bottomNav">
     <div class="bottom-nav-inner">
@@ -1428,6 +1457,10 @@ kbd{
 
     <div class="set-group">
       <div class="set-label" data-i18n="settings.data">Данные</div>
+      <button class="btn block" id="btnSyncNow" style="justify-content:center; margin-bottom:7px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 01-9 9 9 9 0 01-8-4.9M3 12a9 9 0 019-9 9 9 0 018 4.9"/><path d="M21 3v6h-6M3 21v-6h6"/></svg>
+        <span data-i18n="settings.syncNow">Синхронизировать сейчас</span>
+      </button>
       <button class="btn block" id="btnExport" style="justify-content:center; margin-bottom:7px;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
         <span data-i18n="settings.export">Скачать все данные</span>
@@ -1584,6 +1617,12 @@ const I18N = {
     'hotkeys.hint': 'C — новая задача · / — поиск · 1-4 разделы · L/W/D — вид · T — настройки',
     'settings.hotkeys': 'Горячие клавиши',
     'settings.data': 'Данные',
+    'sync.offline': 'Нет сети — изменения сохранятся',
+    'sync.syncing': 'Синхронизация…',
+    'sync.pending': 'Не отправлено: {n}',
+    'sync.done': 'Синхронизировано',
+    'sync.offlineStart': 'Сервер недоступен — работаем офлайн',
+    'settings.syncNow': 'Синхронизировать сейчас',
     'settings.export': 'Скачать все данные',
     'settings.exporting': 'Готовим файл…',
     'settings.exported': 'Сохранено задач: {n}',
@@ -1779,6 +1818,12 @@ const I18N = {
     'hotkeys.hint': 'C — new task · / — search · 1-4 sections · L/W/D — view · T — settings',
     'settings.hotkeys': 'Keyboard shortcuts',
     'settings.data': 'Data',
+    'sync.offline': 'Offline — changes are saved',
+    'sync.syncing': 'Syncing…',
+    'sync.pending': 'Pending: {n}',
+    'sync.done': 'Synced',
+    'sync.offlineStart': 'Server unavailable — working offline',
+    'settings.syncNow': 'Sync now',
     'settings.export': 'Download all data',
     'settings.exporting': 'Preparing file…',
     'settings.exported': 'Tasks saved: {n}',
@@ -2016,6 +2061,111 @@ function hhmmToMin(str, fallback){
   if(h > 23 || mi > 59) return fallback;
   return h * 60 + mi;
 }
+
+/* ---------------------------------------------------------------------------
+   1.7. Офлайн-хранилище (IndexedDB)
+
+   Задачи живут локально и читаются мгновенно, даже когда сервер спит.
+   Все изменения складываются в очередь и уходят на сервер, как только
+   появляется связь.
+
+   Ключевое решение — временные идентификаторы. У задачи, созданной без
+   сети, ещё нет серверного id, поэтому ей выдаётся отрицательный: сервер
+   всегда возвращает положительные, так что столкнуться они не могут.
+   После синхронизации временный id меняется на настоящий во всех местах,
+   где он успел засветиться, включая ещё не отправленные операции.
+--------------------------------------------------------------------------- */
+const IDB_NAME = 'orbit-offline';
+const IDB_VERSION = 1;
+
+const DB = {
+  handle: null,
+  ready: false,
+
+  open(){
+    if(this.handle) return Promise.resolve(this.handle);
+    return new Promise((resolve, reject) => {
+      let req;
+      try{ req = indexedDB.open(IDB_NAME, IDB_VERSION); }
+      catch(e){ reject(e); return; }
+
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if(!db.objectStoreNames.contains('tasks'))      db.createObjectStore('tasks', {keyPath: 'id'});
+        if(!db.objectStoreNames.contains('categories')) db.createObjectStore('categories', {keyPath: 'id'});
+        if(!db.objectStoreNames.contains('outbox'))     db.createObjectStore('outbox', {keyPath: 'seq', autoIncrement: true});
+        if(!db.objectStoreNames.contains('meta'))       db.createObjectStore('meta', {keyPath: 'key'});
+      };
+      req.onsuccess = () => { this.handle = req.result; this.ready = true; resolve(this.handle); };
+      req.onerror = () => reject(req.error);
+    });
+  },
+
+  async tx(store, mode, fn){
+    const db = await this.open();
+    return new Promise((resolve, reject) => {
+      const t = db.transaction(store, mode);
+      const s = t.objectStore(store);
+      let out;
+      try{ out = fn(s); }catch(e){ reject(e); return; }
+      t.oncomplete = () => resolve(out && out.result !== undefined ? out.result : out);
+      t.onerror = () => reject(t.error);
+      t.onabort = () => reject(t.error);
+    });
+  },
+
+  all(store){ return this.tx(store, 'readonly', s => s.getAll()); },
+  put(store, value){ return this.tx(store, 'readwrite', s => s.put(value)); },
+  del(store, key){ return this.tx(store, 'readwrite', s => s.delete(key)); },
+  clear(store){ return this.tx(store, 'readwrite', s => s.clear()); },
+
+  async replaceAll(store, items){
+    const db = await this.open();
+    return new Promise((resolve, reject) => {
+      const t = db.transaction(store, 'readwrite');
+      const s = t.objectStore(store);
+      s.clear();
+      items.forEach(x => s.put(x));
+      t.oncomplete = resolve;
+      t.onerror = () => reject(t.error);
+    });
+  },
+};
+
+/* Очередь исходящих операций. Порядок важен: создание задачи должно уйти
+   раньше, чем её же изменение. */
+const Outbox = {
+  async add(op){
+    try{
+      await DB.tx('outbox', 'readwrite', s => s.add(Object.assign({ts: Date.now()}, op)));
+      updateSyncBadge();
+    }catch(e){ console.warn('Не удалось записать операцию в очередь:', e); }
+  },
+  async list(){
+    try{
+      const items = await DB.all('outbox');
+      return (items || []).sort((a, b) => a.seq - b.seq);
+    }catch(_e){ return []; }
+  },
+  async remove(seq){ try{ await DB.del('outbox', seq); }catch(_e){} },
+  async count(){ return (await this.list()).length; },
+
+  /* Когда временный id превращается в настоящий, чиним ссылки в тех
+     операциях, которые ещё не успели уйти. */
+  async remapId(tempId, realId){
+    const items = await this.list();
+    for(const op of items){
+      let changed = false;
+      if(op.id === tempId){ op.id = realId; changed = true; }
+      if(op.taskId === tempId){ op.taskId = realId; changed = true; }
+      if(changed) await DB.put('outbox', op);
+    }
+  },
+};
+
+let nextTempId = -Date.now();
+function makeTempId(){ return nextTempId--; }
+function isTempId(id){ return typeof id === 'number' && id < 0; }
 
 /* ---------------------------------------------------------------------------
    2. Утилиты DOM / состояние
@@ -2494,17 +2644,36 @@ function boot(){
     }
 
     if(State.sessionToken){
-      // Каркас видно сразу — приложение не выглядит зависшим, пока
-      // просыпается сервер.
       $('#app').classList.add('ready');
+
+      // Локальная копия показывается немедленно, синхронизация уходит в фон.
+      // Скелетоны нужны только при самом первом входе, когда копии ещё нет.
+      const hasLocal = await loadLocalSnapshot();
+      if(hasLocal){
+        enterApp();
+        State.booted = true;
+        startSyncLoop();
+        syncNow();
+        return;
+      }
+
       showSkeletons();
       try{
         await loadUserAndData();
         enterApp();
-      }catch(_e){
-        State.sessionToken = null;
-        localStorage.removeItem(TOKEN_KEY);
-        showLoginScreen();
+        startSyncLoop();
+      }catch(err){
+        // Сервера нет, локальной копии тоже. Если дело в сети — не выкидываем
+        // на экран входа: человек хотя бы сможет создать задачу, она уйдёт позже.
+        if(err && err.network){
+          enterApp();
+          startSyncLoop();
+          toast(t('sync.offlineStart'), 'warn');
+        }else{
+          State.sessionToken = null;
+          localStorage.removeItem(TOKEN_KEY);
+          showLoginScreen();
+        }
       }
     }else{
       showLoginScreen();
@@ -2539,12 +2708,261 @@ function showLoginScreen(){
   }
 }
 
+/* ---------------------------------------------------------------------------
+   Синхронизация: разбор очереди и слияние с сервером
+--------------------------------------------------------------------------- */
+const Sync = {
+  running: false,
+  timer: null,
+  lastError: null,
+};
+
+/* Сетевая ошибка или спящий сервер — повод подождать. Отказ сервера
+   (400/404/409) означает, что операция бессмысленна, и её надо выбросить,
+   иначе очередь застрянет навсегда на одной битой записи. */
+function isRetryable(err){
+  if(!err) return true;
+  if(err.network) return true;
+  const st = err.status;
+  if(!st) return true;
+  return st >= 500 || st === 429 || st === 503;
+}
+
+async function flushOutbox(){
+  const items = await Outbox.list();
+  if(!items.length) return {sent: 0, kept: 0};
+
+  // Список операций читается один раз, а временные id превращаются в
+  // настоящие уже по ходу отправки. Поэтому подмену держим и здесь, в
+  // памяти: иначе подзадача, созданная вместе с задачей, полетит на
+  // сервер со ссылкой на несуществующий id и будет отброшена.
+  const idMap = new Map();
+  const real = (id) => (idMap.has(id) ? idMap.get(id) : id);
+
+  let sent = 0;
+  for(const op of items){
+    if(op.id !== undefined) op.id = real(op.id);
+    if(op.taskId !== undefined) op.taskId = real(op.taskId);
+    try{
+      switch(op.type){
+        case 'task.create': {
+          if(op.payload && op.payload.category_id !== undefined && op.payload.category_id !== null){
+            op.payload.category_id = real(op.payload.category_id);
+            if(isTempId(op.payload.category_id)) op.payload.category_id = null;
+          }
+          const resp = await Api.createTask(op.payload);
+          if(resp && resp.id && op.tempId){
+            idMap.set(op.tempId, resp.id);
+            await applyRealId(op.tempId, resp.id);
+          }
+          break;
+        }
+        case 'task.update':
+          if(isTempId(op.id)) throw {status: 409, message: 'нет серверного id'};
+          if(op.payload && op.payload.category_id !== undefined && op.payload.category_id !== null){
+            op.payload.category_id = real(op.payload.category_id);
+            if(isTempId(op.payload.category_id)) op.payload.category_id = null;
+          }
+          await Api.updateTask(op.id, op.payload);
+          break;
+        case 'task.delete':
+          if(!isTempId(op.id)) await Api.deleteTask(op.id);
+          break;
+        case 'subtask.create': {
+          if(isTempId(op.taskId)) throw {status: 409, message: 'нет серверного id'};
+          const r = await Api.createSubtask(op.taskId, op.payload.text);
+          if(r && r.id && op.tempId){
+            idMap.set(op.tempId, r.id);
+            await applyRealSubtaskId(op.taskId, op.tempId, r.id);
+          }
+          break;
+        }
+        case 'subtask.update':
+          if(isTempId(op.id)) throw {status: 409, message: 'нет серверного id'};
+          await Api.updateSubtask(op.id, op.payload);
+          break;
+        case 'subtask.delete':
+          if(!isTempId(op.id)) await Api.deleteSubtask(op.id);
+          break;
+        case 'category.create': {
+          const resp = await Api.createCategory(op.payload.name);
+          if(resp && resp.id && op.tempId){
+            idMap.set(op.tempId, resp.id);
+            await applyRealCategoryId(op.tempId, resp.id);
+          }
+          break;
+        }
+        case 'category.update':
+          if(isTempId(op.id)) throw {status: 409, message: 'нет серверного id'};
+          await Api.updateCategory(op.id, op.payload);
+          break;
+        case 'category.delete':
+          if(!isTempId(op.id)) await Api.deleteCategory(op.id);
+          break;
+        default:
+          break;                                    // неизвестная операция — выбрасываем
+      }
+      await Outbox.remove(op.seq);
+      sent++;
+    }catch(err){
+      if(isRetryable(err)){
+        // Прерываемся: порядок операций важен, следующие могут зависеть
+        // от этой. Попробуем всю очередь заново позже.
+        Sync.lastError = err;
+        return {sent, kept: items.length - sent};
+      }
+      console.warn('Операция отклонена сервером, выбрасываем:', op.type, err);
+      await Outbox.remove(op.seq);
+    }
+  }
+  return {sent, kept: 0};
+}
+
+/* Временный id задачи заменяется на настоящий везде: в памяти, в локальной
+   базе и в ещё не отправленных операциях. */
+async function applyRealId(tempId, realId){
+  const tk = State.tasks.find(x => x.id === tempId);
+  if(tk){ tk.id = realId; tk.pending = false; }
+  try{ await DB.del('tasks', tempId); }catch(_e){}
+  if(tk) await DB.put('tasks', stripRuntime(tk));
+  await Outbox.remapId(tempId, realId);
+  if(editingTaskId === tempId) editingTaskId = realId;
+}
+
+async function applyRealSubtaskId(taskId, tempId, realId){
+  const tk = State.tasks.find(x => x.id === taskId);
+  if(tk && tk.subtasks){
+    const st = tk.subtasks.find(x => x.id === tempId);
+    if(st) st.id = realId;
+    await DB.put('tasks', stripRuntime(tk));
+  }
+  await Outbox.remapId(tempId, realId);
+}
+
+async function applyRealCategoryId(tempId, realId){
+  const c = State.categories.find(x => x.id === tempId);
+  if(c) c.id = realId;
+  State.tasks.forEach(t => { if(t.category_id === tempId) t.category_id = realId; });
+  if(UIState.categoryId === tempId) UIState.categoryId = realId;
+  await Outbox.remapId(tempId, realId);
+  await persistSnapshot();
+}
+
+/* Служебные поля не должны утекать в локальную базу как есть. */
+function stripRuntime(task){
+  const copy = Object.assign({}, task);
+  delete copy._el;
+  return copy;
+}
+
+async function persistSnapshot(){
+  try{
+    await DB.replaceAll('tasks', State.tasks.map(stripRuntime));
+    await DB.replaceAll('categories', State.categories.slice());
+  }catch(e){ console.warn('Не удалось сохранить локальную копию:', e); }
+}
+
+/* Главная точка синхронизации: сначала отдаём накопленное, потом забираем
+   свежее с сервера. */
+async function syncNow({silent = true} = {}){
+  if(Sync.running) return;
+  if(!State.sessionToken) return;
+  if(navigator.onLine === false){ updateSyncBadge(); return; }
+
+  Sync.running = true;
+  updateSyncBadge();
+  try{
+    const {kept} = await flushOutbox();
+
+    // Если очередь не разошлась, тянуть с сервера рано: он вернёт данные
+    // без наших изменений, и они мигнут на экране в старом виде.
+    if(kept > 0){ updateSyncBadge(); return; }
+
+    const [catsResp, tasksResp] = await Promise.all([Api.listCategories(), Api.listTasks()]);
+    mergeFromServer(catsResp.categories || [], tasksResp.tasks || []);
+    Sync.lastError = null;
+    await persistSnapshot();
+    renderAll();
+    if(!silent) toast(t('sync.done'), 'ok');
+  }catch(err){
+    Sync.lastError = err;
+    if(!silent) toast(friendlyError(err), 'err');
+  }finally{
+    Sync.running = false;
+    updateSyncBadge();
+  }
+}
+
+/* Слияние: сервер — источник правды для всего, что уже синхронизировано.
+   Локальные записи, ещё стоящие в очереди, сохраняются как есть. */
+function mergeFromServer(serverCats, serverTasks){
+  const pendingTasks = State.tasks.filter(x => x.pending || isTempId(x.id));
+  const byId = new Map(serverTasks.map(t => [t.id, t]));
+
+  // Локальные правки уже отправленных задач не затираем, пока они в очереди
+  pendingTasks.forEach(p => { if(!isTempId(p.id)) byId.set(p.id, p); });
+
+  State.tasks = serverTasks
+    .map(t => byId.get(t.id) || t)
+    .concat(pendingTasks.filter(p => isTempId(p.id)));
+
+  const pendingCats = State.categories.filter(c => isTempId(c.id));
+  State.categories = serverCats.concat(pendingCats);
+}
+
+function updateSyncBadge(){
+  const el = $('#syncBadge');
+  if(!el) return;
+  Outbox.count().then(n => {
+    const offline = navigator.onLine === false;
+    el.classList.toggle('show', offline || n > 0 || Sync.running);
+    el.classList.toggle('offline', offline);
+    el.classList.toggle('syncing', Sync.running && !offline);
+    const label = $('.sb-text', el);
+    if(label){
+      label.textContent = offline ? t('sync.offline')
+        : Sync.running ? t('sync.syncing')
+        : n > 0 ? t('sync.pending', {n})
+        : '';
+    }
+  }).catch(() => {});
+}
+
+function startSyncLoop(){
+  window.addEventListener('online', () => { updateSyncBadge(); syncNow(); });
+  window.addEventListener('offline', updateSyncBadge);
+  document.addEventListener('visibilitychange', () => { if(!document.hidden) syncNow(); });
+  clearInterval(Sync.timer);
+  Sync.timer = setInterval(() => syncNow(), 45000);
+}
+
+/* Локальная копия читается первой и мгновенно: приложение открывается
+   сразу, даже когда сервер на бесплатном тарифе просыпается минуту. */
+async function loadLocalSnapshot(){
+  try{
+    const [tasks, cats, meta] = await Promise.all([
+      DB.all('tasks'), DB.all('categories'), DB.all('meta'),
+    ]);
+    if(!tasks || !tasks.length) return false;
+    State.tasks = tasks;
+    State.categories = cats || [];
+    const user = (meta || []).find(x => x.key === 'user');
+    if(user) State.user = user.value;
+    return true;
+  }catch(e){
+    console.warn('Локальная копия недоступна:', e);
+    return false;
+  }
+}
+
 async function loadUserAndData(){
   const meResp = await Api.me();
   State.user = meResp.user;
+  try{ await DB.put('meta', {key: 'user', value: State.user}); }catch(_e){}
+
   const [catsResp, tasksResp] = await Promise.all([Api.listCategories(), Api.listTasks()]);
-  State.categories = catsResp.categories || [];
-  State.tasks = tasksResp.tasks || [];
+  mergeFromServer(catsResp.categories || [], tasksResp.tasks || []);
+  await persistSnapshot();
 }
 
 /* Глубокие ссылки: t.me/бот?startapp=week открывает сразу нужный раздел.
@@ -3103,7 +3521,17 @@ async function submitGuestLogin(){
   }
 }
 
+async function clearLocalData(){
+  try{
+    await Promise.all([
+      DB.clear('tasks'), DB.clear('categories'),
+      DB.clear('outbox'), DB.clear('meta'),
+    ]);
+  }catch(_e){}
+}
+
 function logout(){
+  clearLocalData();
   Api.logout().catch(() => {});
   State.sessionToken = null;
   State.user = null;
@@ -3285,6 +3713,7 @@ async function exportAllData(){
 
 function wireSettingsInputs(){
   $('#btnExport').onclick = exportAllData;
+  $('#btnSyncNow').onclick = () => { haptic('light'); syncNow({silent: false}); };
   $('#ceSave').onclick = saveCategoryEditor;
   $('#ceName').addEventListener('keydown', e => {
     if(e.key === 'Enter'){ e.preventDefault(); saveCategoryEditor(); }
@@ -3440,7 +3869,9 @@ async function saveCategoryEditor(){
   if(!name){ toast(t('cat.nameRequired'), 'err'); return; }
 
   try{
-    await Api.updateCategory(id, {name, color: picked ? picked.dataset.c : null});
+    await Outbox.add({type: 'category.update', id,
+                      payload: {name, color: picked ? picked.dataset.c : null}});
+    syncNow();
     const cat = State.categories.find(c => c.id === id);
     if(cat){ cat.name = name; cat.color = picked ? picked.dataset.c : null; }
     modal.classList.remove('show');
@@ -3871,7 +4302,14 @@ function syncBottomNav(){
   }
 }
 
+let snapshotTimer = null;
+function scheduleSnapshot(){
+  clearTimeout(snapshotTimer);
+  snapshotTimer = setTimeout(() => persistSnapshot(), 400);
+}
+
 function renderAll(){
+  scheduleSnapshot();
   syncBottomNav();
   $('#cntAll').textContent = State.tasks.filter(x => !x.completed).length;
   $('#cntToday').textContent = State.tasks.filter(x => !x.completed && isDueToday(x.due_date)).length;
@@ -4215,7 +4653,10 @@ function buildWeekColumn({dateKey, headHtml, tasks, isToday}){
     tk.due_date = newDue;
     renderAll();
     try{
-      await Api.updateTask(taskId, {due_date: newDue});
+      const moved = State.tasks.find(x => x.id === taskId);
+      if(moved) await DB.put('tasks', stripRuntime(moved)).catch(() => {});
+      await Outbox.add({type: 'task.update', id: taskId, payload: {due_date: newDue}});
+      syncNow();
     }catch(err){
       tk.due_date = prevDue;
       renderAll();
@@ -4307,12 +4748,17 @@ async function submitQuickAdd(input, preview){
   input.focus();
 
   try{
-    const resp = await Api.createTask({text, priority, category_id, due_date});
-    State.tasks.unshift({
-      id: resp.id, text, priority, category_id, due_date,
-      completed: false, is_favorite: false,
+    const payload = {text, priority, category_id, due_date};
+    const tempId = makeTempId();
+    const task = Object.assign({
+      id: tempId, completed: false, is_favorite: false, subtasks: [],
+      notes: null, duration_min: null, icon: null, pending: true,
       created_at: new Date().toISOString(), completed_at: null,
-    });
+    }, payload);
+    State.tasks.unshift(task);
+    await DB.put('tasks', stripRuntime(task)).catch(() => {});
+    await Outbox.add({type: 'task.create', tempId, payload});
+    syncNow();
     renderAll();
     // После renderAll DOM панели быстрого ввода пересоздаётся — возвращаем фокус.
     const freshInput = $('#quickAddInput');
@@ -4322,19 +4768,20 @@ async function submitQuickAdd(input, preview){
   }
 }
 
+/* Изменения применяются локально сразу и уходят в очередь. Интерфейс не
+   ждёт сервер, а операция не потеряется, даже если закрыть вкладку —
+   она лежит в IndexedDB. */
 async function toggleTaskDone(tk){
   const newVal = !tk.completed;
   tk.completed = newVal;
   tk.completed_at = newVal ? new Date().toISOString() : null;
+  tk.updated_at = new Date().toISOString();
   renderAll();
-  try{
-    await Api.updateTask(tk.id, {completed: newVal});
-    toast(newVal ? t('task.done') : t('task.undone'), 'ok');
-  }catch(err){
-    tk.completed = !newVal;
-    renderAll();
-    toast(friendlyError(err), 'err');
-  }
+
+  await DB.put('tasks', stripRuntime(tk)).catch(() => {});
+  await Outbox.add({type: 'task.update', id: tk.id, payload: {completed: newVal}});
+  toast(newVal ? t('task.done') : t('task.undone'), 'ok');
+  syncNow();
 }
 
 async function toggleTaskFav(tk){
@@ -4342,7 +4789,9 @@ async function toggleTaskFav(tk){
   tk.is_favorite = newVal;
   renderAll();
   try{
-    await Api.updateTask(tk.id, {is_favorite: newVal});
+    await DB.put('tasks', stripRuntime(tk)).catch(() => {});
+    await Outbox.add({type: 'task.update', id: tk.id, payload: {is_favorite: newVal}});
+    syncNow();
   }catch(err){
     tk.is_favorite = !newVal;
     renderAll();
@@ -4358,7 +4807,8 @@ function finalizePendingDeletion(){
   clearTimeout(pendingUndo.timerId);
   const tk = pendingUndo.task;
   pendingUndo = null;
-  Api.deleteTask(tk.id).catch(err => toast(friendlyError(err), 'err'));
+  DB.del('tasks', tk.id).catch(() => {});
+  Outbox.add({type: 'task.delete', id: tk.id}).then(() => syncNow());
 }
 
 function deleteTaskWithUndo(tk){
@@ -4372,7 +4822,8 @@ function deleteTaskWithUndo(tk){
 
   const timerId = setTimeout(() => {
     if(pendingUndo && pendingUndo.task.id === tk.id){
-      Api.deleteTask(tk.id).catch(err => toast(friendlyError(err), 'err'));
+      DB.del('tasks', tk.id).catch(() => {});
+      Outbox.add({type: 'task.delete', id: tk.id}).then(() => syncNow());
       pendingUndo = null;
     }
   }, 5000);
@@ -4606,21 +5057,25 @@ function renderSubtasks(){
       haptic(st.completed ? 'light' : 'success');
       st.completed = st.completed ? 0 : 1;
       renderSubtasks();
-      if(st.id) try{ await Api.updateSubtask(st.id, {completed: !!st.completed}); }catch(_e){}
+      if(st.id) await Outbox.add({type: 'subtask.update', id: st.id,
+                                  payload: {completed: !!st.completed}});
+      syncNow();
       syncSubtasksToState();
     };
     $('input', row).onchange = async (e) => {
       const val = e.target.value.trim();
       if(!val){ e.target.value = st.text; return; }
       st.text = val;
-      if(st.id) try{ await Api.updateSubtask(st.id, {text: val}); }catch(_e){}
+      if(st.id) await Outbox.add({type: 'subtask.update', id: st.id, payload: {text: val}});
+      syncNow();
       syncSubtasksToState();
     };
     $('.sub-del', row).onclick = async () => {
       haptic('warning');
       TaskDraft.subtasks.splice(idx, 1);
       renderSubtasks();
-      if(st.id) try{ await Api.deleteSubtask(st.id); }catch(_e){}
+      if(st.id) await Outbox.add({type: 'subtask.delete', id: st.id});
+      syncNow();
       syncSubtasksToState();
     };
     list.appendChild(row);
@@ -4649,11 +5104,11 @@ async function addSubtaskFromInput(){
   // У новой, ещё не сохранённой задачи id появится после создания —
   // тогда подзадачи отправятся пачкой в saveTaskModal.
   if(editingTaskId){
-    try{
-      const r = await Api.createSubtask(editingTaskId, text);
-      st.id = r.id;
-      syncSubtasksToState();
-    }catch(err){ toast(friendlyError(err), 'err'); }
+    st.id = makeTempId();
+    await Outbox.add({type: 'subtask.create', taskId: editingTaskId,
+                      tempId: st.id, payload: {text}});
+    syncSubtasksToState();
+    syncNow();
   }
 }
 
@@ -4757,32 +5212,42 @@ async function saveTaskModal(){
 
   try{
     if(editingTaskId){
-      await Api.updateTask(editingTaskId, {text, priority, category_id, due_date, notes, duration_min, icon});
+      const payload = {text, priority, category_id, due_date, notes, duration_min, icon};
       const tk = State.tasks.find(x => x.id === editingTaskId);
       if(tk){
-        Object.assign(tk, {text, priority, category_id, due_date, notes, duration_min, icon});
+        Object.assign(tk, payload);
         tk.subtasks = TaskDraft.subtasks.slice();
+        tk.updated_at = new Date().toISOString();
+        await DB.put('tasks', stripRuntime(tk)).catch(() => {});
       }
+      await Outbox.add({type: 'task.update', id: editingTaskId, payload});
       toast(t('task.updated'), 'ok');
+      syncNow();
     }else{
-      const resp = await Api.createTask({text, priority, category_id, due_date, notes, duration_min, icon});
+      const payload = {text, priority, category_id, due_date, notes, duration_min, icon};
+      const tempId = makeTempId();
 
-      // Подзадачи новой задачи копились локально — отправляем их теперь,
-      // когда у задачи наконец появился идентификатор.
-      const created = [];
-      for(const st of TaskDraft.subtasks){
-        try{
-          const r = await Api.createSubtask(resp.id, st.text);
-          created.push({id: r.id, text: st.text, completed: 0});
-        }catch(_e){}
+      // Подзадачи тоже получают временные идентификаторы и уходят в очередь
+      // следом за задачей — порядок в очереди гарантирует, что к моменту их
+      // отправки у задачи уже будет настоящий id.
+      const subs = TaskDraft.subtasks.map(st => ({
+        id: makeTempId(), text: st.text, completed: st.completed ? 1 : 0,
+      }));
+
+      const task = Object.assign({
+        id: tempId, completed: false, is_favorite: false, subtasks: subs,
+        pending: true, created_at: new Date().toISOString(), completed_at: null,
+      }, payload);
+
+      State.tasks.unshift(task);
+      await DB.put('tasks', stripRuntime(task)).catch(() => {});
+      await Outbox.add({type: 'task.create', tempId, payload});
+      for(const st of subs){
+        await Outbox.add({type: 'subtask.create', taskId: tempId, tempId: st.id,
+                          payload: {text: st.text}});
       }
-
-      State.tasks.unshift({
-        id: resp.id, text, priority, category_id, due_date, notes, duration_min, icon,
-        completed: false, is_favorite: false, subtasks: created,
-        created_at: new Date().toISOString(), completed_at: null,
-      });
       toast(t('task.created'), 'ok');
+      syncNow();
     }
     closeTaskModal();
     renderAll();
@@ -4811,7 +5276,10 @@ async function saveCategoryModal(){
   const name = $('#catName').value.trim();
   if(!name){ toast(t('category.needName'), 'warn'); $('#catName').focus(); return; }
   try{
-    const resp = await Api.createCategory(name);
+    const tempId = makeTempId();
+    await Outbox.add({type: 'category.create', tempId, payload: {name}});
+    const resp = {id: tempId};
+    syncNow();
     State.categories.push({id: resp.id, name});
     $('#categoryModal').classList.remove('show');
     toast(t('category.created'), 'ok');
@@ -4835,7 +5303,8 @@ async function performDeleteCategory(){
   if(!c) return;
   $('#confirmModal').classList.remove('show');
   try{
-    await Api.deleteCategory(c.id);
+    await Outbox.add({type: 'category.delete', id: c.id});
+    syncNow();
     if(UIState.categoryId === c.id) UIState.categoryId = null;
     State.categories = State.categories.filter(x => x.id !== c.id);
     State.tasks.forEach(tk => { if(tk.category_id === c.id) tk.category_id = null; });
