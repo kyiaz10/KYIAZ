@@ -1172,30 +1172,58 @@ html[data-theme="light"] .tw-frame, html[data-theme="paper"] .tw-frame, html[dat
 ============================================================ */
 /* Предложение установить. Показывается один раз и запоминает отказ:
    навязчивый баннер раздражает сильнее, чем помогает. */
-.install-bar{
-  position:fixed; left:16px; right:16px; bottom:16px; z-index:210;
-  display:none; align-items:center; gap:12px;
-  padding:12px 14px; border-radius:var(--r-lg);
-  background:var(--bg-1); border:1px solid var(--border-strong);
-  box-shadow:0 18px 44px -14px rgba(0,0,0,.65);
-  transform:translateY(20px); opacity:0;
-  transition:opacity .35s var(--ease), transform .35s var(--ease-soft);
-  max-width:520px; margin:0 auto;
+/* Крупный экран предложения установки. Раньше это была узкая полоска
+   внизу — её просто не замечали. */
+.install-hero{
+  position:fixed; inset:0; z-index:260;
+  display:none; align-items:center; justify-content:center; padding:20px;
+  background:rgba(0,0,0,.62);
+  opacity:0; transition:opacity .35s var(--ease);
+  overflow-y:auto;
 }
-.install-bar.show{display:flex; opacity:1; transform:translateY(0);}
-.ib-icon{font-size:26px; flex:0 0 auto;}
-.ib-text{flex:1; min-width:0; display:flex; flex-direction:column; gap:2px;}
-.ib-text b{font-size:var(--fs-base); font-weight:600;}
-.ib-text span{font-size:var(--fs-xs); color:var(--text-3); line-height:1.4;}
-.ib-close{width:26px; height:26px; flex:0 0 auto; border-radius:var(--r-sm);
-  display:flex; align-items:center; justify-content:center; color:var(--text-3);}
-.ib-close:hover{background:var(--bg-3); color:var(--text-1);}
-.ib-close svg{width:13px; height:13px;}
+.install-hero.show{display:flex; opacity:1;}
+.ih-card{
+  position:relative; width:430px; max-width:100%;
+  padding:34px 28px 24px; border-radius:20px; text-align:center;
+  background:var(--bg-1); border:1px solid var(--border-strong);
+  box-shadow:0 30px 80px -20px rgba(0,0,0,.7);
+  transform:translateY(18px) scale(.97);
+  transition:transform .4s var(--ease-soft);
+}
+.install-hero.show .ih-card{transform:translateY(0) scale(1);}
+.ih-close{
+  position:absolute; top:14px; right:14px; width:30px; height:30px;
+  border-radius:50%; display:flex; align-items:center; justify-content:center;
+  color:var(--text-3); background:var(--bg-2); border:1px solid var(--glass-border);
+}
+.ih-close:hover{background:var(--bg-3); color:var(--text-1);}
+.ih-close svg{width:13px; height:13px;}
+.ih-icon{
+  width:78px; height:78px; border-radius:20px; margin-bottom:16px;
+  box-shadow:0 14px 34px -10px rgba(0,0,0,.55);
+  animation:ihFloat 4.5s var(--ease-soft) infinite;
+}
+@keyframes ihFloat{0%,100%{transform:translateY(0);} 50%{transform:translateY(-7px);}}
+.ih-title{font-size:var(--fs-lg); font-weight:600; letter-spacing:-.015em; margin-bottom:7px;}
+.ih-sub{font-size:var(--fs-base); color:var(--text-2); line-height:1.55; margin-bottom:20px;}
+.ih-feats{display:flex; flex-direction:column; gap:12px; text-align:left; margin-bottom:22px;}
+.ih-feat{display:flex; gap:11px; align-items:flex-start;}
+.ih-feat > span{
+  flex:0 0 34px; height:34px; border-radius:var(--r-md); font-size:16px;
+  display:flex; align-items:center; justify-content:center;
+  background:var(--bg-2); border:1px solid var(--glass-border);
+}
+.ih-feat b{display:block; font-size:var(--fs-base); margin-bottom:2px;}
+.ih-feat div > span{font-size:var(--fs-sm); color:var(--text-3); line-height:1.45;}
+.ih-action{width:100%; justify-content:center; padding:13px; font-size:var(--fs-md);}
+.ih-later{
+  display:block; width:100%; margin-top:11px; padding:8px;
+  font-size:var(--fs-sm); color:var(--text-3);
+}
+.ih-later:hover{color:var(--text-1);}
 @media (max-width: 520px){
-  .install-bar{flex-wrap:wrap; bottom:calc(var(--bottombar-h) + var(--safe-bottom) + 12px);}
-  .ib-text{flex:1 1 100%; order:1;}
-  .ib-icon{order:0;} .ib-close{order:0; margin-left:auto;}
-  .install-bar .btn.primary{flex:1 1 100%; order:2; justify-content:center;}
+  .ih-card{padding:28px 20px 20px;}
+  .ih-icon{width:66px; height:66px;}
 }
 
 .ios-steps{display:flex; flex-direction:column; gap:13px; margin-bottom:6px;}
@@ -1558,17 +1586,36 @@ kbd{
     <main class="main-view" id="mainView"></main>
   </div>
 
-  <!-- Предложение установить приложение -->
-  <div class="install-bar" id="installBar">
-    <span class="ib-icon">🪐</span>
-    <div class="ib-text">
-      <b data-i18n="install.title">Установить Orbit</b>
-      <span data-i18n="install.sub">Работает без интернета, открывается с рабочего стола</span>
+  <!-- Крупное предложение установить приложение. Показывается один раз:
+       отказ запоминается, повторно не навязываемся. -->
+  <div class="install-hero" id="installBar">
+    <div class="ih-card">
+      <button class="ih-close" id="installDismiss" aria-label="Закрыть">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+
+      <img class="ih-icon" src="icon-192.png" alt="Orbit">
+      <div class="ih-title" data-i18n="install.heroTitle">Установите Orbit на устройство</div>
+      <div class="ih-sub" data-i18n="install.heroSub">Приложение открывается с рабочего стола и работает даже без интернета</div>
+
+      <div class="ih-feats">
+        <div class="ih-feat"><span>⚡️</span><div>
+          <b data-i18n="install.f1t">Мгновенный запуск</b>
+          <span data-i18n="install.f1s">Задачи открываются сразу, без ожидания сервера</span></div></div>
+        <div class="ih-feat"><span>✈️</span><div>
+          <b data-i18n="install.f2t">Работает офлайн</b>
+          <span data-i18n="install.f2s">В метро и в самолёте — изменения уйдут потом</span></div></div>
+        <div class="ih-feat"><span>🔔</span><div>
+          <b data-i18n="install.f3t">Напоминания в Telegram</b>
+          <span data-i18n="install.f3s">За час до дедлайна, прямо в чат</span></div></div>
+      </div>
+
+      <button class="btn primary ih-action" id="installBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="3"/><path d="M12 6v8M9 11l3 3 3-3"/></svg>
+        <span data-i18n="install.action">Установить приложение</span>
+      </button>
+      <button class="ih-later" id="installLater" data-i18n="install.later">Не сейчас</button>
     </div>
-    <button class="btn primary" id="installBtn" data-i18n="install.action">Установить</button>
-    <button class="ib-close" id="installDismiss" aria-label="×">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
-    </button>
   </div>
 
   <!-- Инструкция для iPhone: там нет автоматической установки -->
@@ -1990,6 +2037,15 @@ const I18N = {
     'sync.offlineStart': 'Сервер недоступен — работаем офлайн',
     'install.title': 'Установить Orbit',
     'install.sub': 'Работает без интернета, открывается с рабочего стола',
+    'install.heroTitle': 'Установите Orbit на устройство',
+    'install.heroSub': 'Приложение открывается с рабочего стола и работает даже без интернета',
+    'install.f1t': 'Мгновенный запуск',
+    'install.f1s': 'Задачи открываются сразу, без ожидания сервера',
+    'install.f2t': 'Работает офлайн',
+    'install.f2s': 'В метро и в самолёте — изменения уйдут потом',
+    'install.f3t': 'Напоминания в Telegram',
+    'install.f3s': 'За час до дедлайна, прямо в чат',
+    'install.later': 'Не сейчас',
     'install.action': 'Установить приложение',
     'install.done': 'Готово! Orbit теперь на вашем устройстве',
     'install.unsupported': 'Этот браузер не поддерживает установку. Попробуйте Chrome или Safari.',
@@ -2209,6 +2265,15 @@ const I18N = {
     'sync.offlineStart': 'Server unavailable — working offline',
     'install.title': 'Install Orbit',
     'install.sub': 'Works offline, opens from your home screen',
+    'install.heroTitle': 'Install Orbit on your device',
+    'install.heroSub': 'Opens from your home screen and works even without internet',
+    'install.f1t': 'Instant start',
+    'install.f1s': 'Tasks open right away, no waiting for the server',
+    'install.f2t': 'Works offline',
+    'install.f2s': 'On the subway or a plane — changes sync later',
+    'install.f3t': 'Reminders in Telegram',
+    'install.f3s': 'An hour before the deadline, right in chat',
+    'install.later': 'Not now',
     'install.action': 'Install app',
     'install.done': 'Done! Orbit is now on your device',
     'install.unsupported': 'This browser does not support installing. Try Chrome or Safari.',
@@ -6143,8 +6208,9 @@ function showInstallBar(){
   if(!canOfferInstall()) return;
   const bar = $('#installBar');
   if(!bar) return;
-  // Не выпрыгиваем сразу: сначала человек должен увидеть само приложение.
-  setTimeout(() => bar.classList.add('show'), 2500);
+  // Не выпрыгиваем сразу: сначала человек должен увидеть само приложение,
+  // иначе баннер выглядит как реклама на входе.
+  setTimeout(() => bar.classList.add('show'), 3500);
 }
 
 function hideInstallBar(remember){
@@ -6192,6 +6258,12 @@ function wireInstall(){
   if(btn) btn.onclick = runInstall;
   const dismiss = $('#installDismiss');
   if(dismiss) dismiss.onclick = () => { haptic('light'); hideInstallBar(true); };
+  const later = $('#installLater');
+  if(later) later.onclick = () => { haptic('light'); hideInstallBar(true); };
+
+  // Клик по затемнению вокруг карточки тоже закрывает
+  const hero = $('#installBar');
+  if(hero) hero.onclick = (e) => { if(e.target === hero) hideInstallBar(true); };
 
   // На iPhone события beforeinstallprompt не будет никогда — предлагаем сами
   if(isIOS() && canOfferInstall()) showInstallBar();
