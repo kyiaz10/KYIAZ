@@ -5,8 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Orbit</title>
 <link rel="manifest" href="manifest.json">
-<link rel="icon" type="image/png" sizes="192x192" href="icon-round-192.png">
-<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=2">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png?v=2">
+<link rel="apple-touch-icon" href="icon-192.png?v=2">
 <meta name="theme-color" content="#05060a">
 <!-- Telegram Mini App SDK: работает только если сайт открыт внутри Telegram
      (через бота, настроенного в @BotFather). В обычном браузере скрипт
@@ -408,6 +409,67 @@ html[data-theme="mono"]{
 }
 
 /* Светлая */
+/* --- Светлые темы ---
+   Раньше светлая была одна и подстраивалась под тёмную палитру.
+   Теперь их несколько, каждая со своим характером — как наборы
+   обоев на iPhone. --sh-* и акценты у всех светлых общие, поэтому
+   задаём их один раз в общем правиле ниже. */
+html[data-theme="paper"],
+html[data-theme="mint"],
+html[data-theme="lavender"],
+html[data-theme="cream"],
+html[data-theme="light"]{
+  --sh-1:0 1px 2px rgba(16,20,35,.07);
+  --sh-2:0 3px 10px rgba(16,20,35,.1);
+  --sh-3:0 10px 30px -8px rgba(16,20,35,.16);
+  --red:#dc2626; --amber:#c2670a; --emerald:#15803d; --sky:#0369a1;
+  --glass-border:rgba(16,20,35,.12); --border-strong:rgba(16,20,35,.2);
+  --text-1:#11131c; --text-2:#454c60; --text-3:#6b7285;
+}
+
+/* Бумага — тёплый белый, максимально спокойный */
+html[data-theme="paper"]{
+  --bg-0:#f2efe9; --bg-1:#faf8f4; --bg-2:#ffffff; --bg-3:#f2efe8;
+  --violet:#e3ded2;
+  --ambient:
+    radial-gradient(ellipse 60% 45% at 10% 0%,   rgba(214,180,120,.20), transparent 62%),
+    radial-gradient(ellipse 55% 40% at 95% 12%,  rgba(190,160,130,.14), transparent 60%),
+    radial-gradient(ellipse 80% 45% at 50% 110%, rgba(220,190,140,.12), transparent 62%);
+}
+
+/* Мята — салатовый, свежий */
+html[data-theme="mint"]{
+  --bg-0:#e6f2ea; --bg-1:#f2faf5; --bg-2:#ffffff; --bg-3:#e4f0e8;
+  --violet:#cfe6d8;
+  --emerald:#0f8b52; --sky:#0a7f8c;
+  --ambient:
+    radial-gradient(ellipse 60% 48% at 8% 0%,    rgba(60,210,140,.26), transparent 62%),
+    radial-gradient(ellipse 55% 40% at 96% 10%,  rgba(150,220,110,.20), transparent 60%),
+    radial-gradient(ellipse 80% 45% at 50% 110%, rgba(40,180,160,.16), transparent 62%);
+}
+
+/* Лаванда — фиолетовый, мягкий */
+html[data-theme="lavender"]{
+  --bg-0:#eeeaf7; --bg-1:#f7f4fc; --bg-2:#ffffff; --bg-3:#eee9f8;
+  --violet:#ddd4f0;
+  --sky:#6d28d9;
+  --ambient:
+    radial-gradient(ellipse 60% 48% at 10% 0%,   rgba(160,110,255,.26), transparent 62%),
+    radial-gradient(ellipse 55% 40% at 95% 12%,  rgba(210,120,255,.20), transparent 60%),
+    radial-gradient(ellipse 80% 45% at 50% 110%, rgba(120,130,255,.16), transparent 62%);
+}
+
+/* Крем — жёлто-белый, солнечный */
+html[data-theme="cream"]{
+  --bg-0:#f6f0dd; --bg-1:#fdfaef; --bg-2:#ffffff; --bg-3:#f5eedc;
+  --violet:#ece0c2;
+  --amber:#b45309;
+  --ambient:
+    radial-gradient(ellipse 60% 48% at 12% 0%,   rgba(255,205,60,.30), transparent 62%),
+    radial-gradient(ellipse 55% 40% at 95% 10%,  rgba(255,170,80,.20), transparent 60%),
+    radial-gradient(ellipse 80% 45% at 50% 110%, rgba(255,225,120,.16), transparent 62%);
+}
+
 /* Светлая. Раньше фон и панели были почти одного белого — слои не
    различались, интерфейс выглядел плоским листом бумаги. Теперь фон
    заметно темнее карточек, как в Notion или Linear. */
@@ -416,21 +478,15 @@ html[data-theme="light"]{
   --bg-1:#f7f8fb;     /* панели */
   --bg-2:#ffffff;     /* карточки — самые светлые, поэтому «всплывают» */
   --bg-3:#eef0f6;     /* наведение */
-  --glass-border:rgba(16,20,35,.12); --border-strong:rgba(16,20,35,.2);
-  --text-1:#11131c; --text-2:#454c60; --text-3:#6b7285;
   --violet:#d3d9f0;
-  --sh-1:0 1px 2px rgba(16,20,35,.07);
-  --sh-2:0 3px 10px rgba(16,20,35,.1);
-  --sh-3:0 10px 30px -8px rgba(16,20,35,.16);
-  --red:#dc2626; --amber:#c2670a; --emerald:#15803d; --sky:#0369a1;
   --ambient:
     radial-gradient(ellipse 60% 45% at 8% 0%,   rgba(120,140,255,.13), transparent 60%),
     radial-gradient(ellipse 55% 40% at 96% 10%, rgba(90,180,255,.11), transparent 58%),
     radial-gradient(ellipse 80% 45% at 50% 110%,rgba(160,120,255,.09), transparent 62%);
 }
-html[data-theme="light"] .select-field option{background:#fff; color:#14161f;}
-html[data-theme="light"] ::-webkit-scrollbar-thumb{background:rgba(16,20,35,.16);}
-html[data-theme="light"] .tl-hour-line{border-top-color:rgba(16,20,35,.09);}
+html[data-theme="light"] .select-field option, html[data-theme="paper"] .select-field option, html[data-theme="mint"] .select-field option, html[data-theme="lavender"] .select-field option, html[data-theme="cream"] .select-field option{background:#fff; color:#14161f;}
+html[data-theme="light"] ::-webkit-scrollbar-thumb, html[data-theme="paper"] ::-webkit-scrollbar-thumb, html[data-theme="mint"] ::-webkit-scrollbar-thumb, html[data-theme="lavender"] ::-webkit-scrollbar-thumb, html[data-theme="cream"] ::-webkit-scrollbar-thumb{background:rgba(16,20,35,.16);}
+html[data-theme="light"] .tl-hour-line, html[data-theme="paper"] .tl-hour-line, html[data-theme="mint"] .tl-hour-line, html[data-theme="lavender"] .tl-hour-line, html[data-theme="cream"] .tl-hour-line{border-top-color:rgba(16,20,35,.09);}
 
 /* Акцентные цвета — влияют на основные кнопки и активные состояния */
 html[data-accent="violet"]{--acc-1:#7d93ff; --acc-2:#4a63e8;}
@@ -534,7 +590,13 @@ html[data-theme="light"] .tl-block{background:linear-gradient(150deg, rgba(255,2
 .set-group{margin-bottom:20px;}
 .set-label{font-size:var(--fs-xs); text-transform:uppercase; letter-spacing:.07em;
   color:var(--text-3); margin-bottom:9px; font-weight:600;}
-.theme-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:7px;}
+.theme-grid{display:block;}
+.theme-grid-inner{display:grid; grid-template-columns:repeat(4,1fr); gap:7px;}
+.theme-group-title{
+  font-size:var(--fs-xs); color:var(--text-3); margin:2px 0 7px;
+  letter-spacing:.04em;
+}
+.theme-grid-inner + .theme-group-title{margin-top:14px;}
 .theme-card{padding:7px; border-radius:var(--r-md); border:1.5px solid var(--glass-border);
   background:var(--bg-2); transition:border-color .16s var(--ease), transform .16s var(--ease); text-align:center;}
 .theme-card:hover{transform:translateY(-2px); border-color:var(--border-strong);}
@@ -988,7 +1050,7 @@ html[data-theme="light"] .focus-overlay{background:rgba(244,245,249,.93);}
   border-top:1px solid var(--glass-border); border-bottom:1px solid var(--glass-border);
   background:rgba(255,255,255,.03); border-radius:var(--r-sm); pointer-events:none;
 }
-html[data-theme="light"] .tw-frame{background:rgba(16,20,35,.04);}
+html[data-theme="light"] .tw-frame, html[data-theme="paper"] .tw-frame, html[data-theme="mint"] .tw-frame, html[data-theme="lavender"] .tw-frame, html[data-theme="cream"] .tw-frame{background:rgba(16,20,35,.04);}
 
 /* ============================================================
    Свой выпадающий список.
@@ -1047,7 +1109,7 @@ html[data-theme="light"] .tw-frame{background:rgba(16,20,35,.04);}
   .pick.open .pick-menu{transform:translateY(0);}
   .pick-menu::before{
     content:''; display:block; width:38px; height:4px; border-radius:4px;
-    background:rgba(255,255,255,.2); margin:0 auto 10px;
+    background:var(--border-strong); margin:0 auto 10px;
   }
   .pick-opt{padding:13px 12px; font-size:var(--fs-md);}
   .pick-scrim{
@@ -1912,6 +1974,9 @@ const I18N = {
     'cat.editTitle': 'Категория', 'cat.name': 'Название', 'cat.color': 'Цвет',
     'cat.edit': 'Изменить', 'cat.saved': 'Категория обновлена',
     'cat.nameRequired': 'Введите название',
+    'theme.groupDark': 'Тёмные', 'theme.groupLight': 'Светлые',
+    'theme.paper': 'Бумага', 'theme.mint': 'Мята',
+    'theme.lavender': 'Лаванда', 'theme.cream': 'Крем',
     'theme.twilight': 'Сумерки',
     'theme.cosmos': 'Космос', 'theme.midnight': 'Полночь', 'theme.ocean': 'Океан',
     'theme.sunset': 'Закат', 'theme.forest': 'Лес', 'theme.mono': 'Графит', 'theme.light': 'Светлая',
@@ -2127,6 +2192,9 @@ const I18N = {
     'cat.editTitle': 'Category', 'cat.name': 'Name', 'cat.color': 'Color',
     'cat.edit': 'Edit', 'cat.saved': 'Category updated',
     'cat.nameRequired': 'Enter a name',
+    'theme.groupDark': 'Dark', 'theme.groupLight': 'Light',
+    'theme.paper': 'Paper', 'theme.mint': 'Mint',
+    'theme.lavender': 'Lavender', 'theme.cream': 'Cream',
     'theme.twilight': 'Twilight',
     'theme.cosmos': 'Cosmos', 'theme.midnight': 'Midnight', 'theme.ocean': 'Ocean',
     'theme.sunset': 'Sunset', 'theme.forest': 'Forest', 'theme.mono': 'Graphite', 'theme.light': 'Light',
@@ -2313,8 +2381,16 @@ const THEMES = [
    glow:'radial-gradient(ellipse 75% 65% at 10% 0%, rgba(50,220,150,.42), transparent 65%), radial-gradient(ellipse 60% 55% at 100% 100%, rgba(120,200,90,.3), transparent 65%)'},
   {id:'mono',     nameKey:'theme.mono',     bg:'#161616', card:'#222222', line:'#f4f4f5', dim:'#88888e', acc:'#a1a1aa',
    glow:'radial-gradient(ellipse 70% 60% at 15% 0%, rgba(255,255,255,.14), transparent 65%)'},
-  {id:'light',    nameKey:'theme.light',    bg:'#eceef4', card:'#ffffff', line:'#11131c', dim:'#6b7285', acc:'#4a63e8',
+  {id:'light',    nameKey:'theme.light',    light:true, bg:'#eceef4', card:'#ffffff', line:'#11131c', dim:'#6b7285', acc:'#4a63e8',
    glow:'radial-gradient(ellipse 75% 65% at 10% 0%, rgba(120,140,255,.35), transparent 65%), radial-gradient(ellipse 60% 55% at 100% 100%, rgba(160,120,255,.25), transparent 65%)'},
+  {id:'paper',    nameKey:'theme.paper',    light:true, bg:'#f2efe9', card:'#ffffff', line:'#11131c', dim:'#6b7285', acc:'#a8763c',
+   glow:'radial-gradient(ellipse 75% 65% at 10% 0%, rgba(214,180,120,.45), transparent 65%), radial-gradient(ellipse 60% 55% at 100% 100%, rgba(220,190,140,.32), transparent 65%)'},
+  {id:'mint',     nameKey:'theme.mint',     light:true, bg:'#e6f2ea', card:'#ffffff', line:'#11131c', dim:'#6b7285', acc:'#0f8b52',
+   glow:'radial-gradient(ellipse 75% 65% at 8% 0%, rgba(60,210,140,.5), transparent 65%), radial-gradient(ellipse 60% 55% at 100% 100%, rgba(150,220,110,.38), transparent 65%)'},
+  {id:'lavender', nameKey:'theme.lavender', light:true, bg:'#eeeaf7', card:'#ffffff', line:'#11131c', dim:'#6b7285', acc:'#7c3aed',
+   glow:'radial-gradient(ellipse 75% 65% at 10% 0%, rgba(160,110,255,.5), transparent 65%), radial-gradient(ellipse 60% 55% at 100% 100%, rgba(210,120,255,.36), transparent 65%)'},
+  {id:'cream',    nameKey:'theme.cream',    light:true, bg:'#f6f0dd', card:'#ffffff', line:'#11131c', dim:'#6b7285', acc:'#b45309',
+   glow:'radial-gradient(ellipse 75% 65% at 12% 0%, rgba(255,205,60,.55), transparent 65%), radial-gradient(ellipse 60% 55% at 100% 100%, rgba(255,225,120,.4), transparent 65%)'},
 ];
 
 const ACCENTS = [
@@ -4162,7 +4238,7 @@ function openSettingsModal(){
 
 function renderSettingsModal(){
   const grid = $('#themeGrid');
-  grid.innerHTML = THEMES.map(th => `
+  const cardFor = th => `
     <button class="theme-card${Settings.theme === th.id ? ' on' : ''}" data-theme="${th.id}">
       <div class="theme-preview" style="background:${th.glow ? th.glow + ', ' : ''}${th.bg};">
         <div class="tp-card" style="background:${th.card};">
@@ -4176,7 +4252,17 @@ function renderSettingsModal(){
         </div>
       </div>
       <div class="theme-name">${escapeHtml(t(th.nameKey))}</div>
-    </button>`).join('');
+    </button>`;
+
+  // Тёмные и светлые разведены по группам: иначе в общей сетке
+  // приходится выискивать нужную среди двенадцати квадратиков.
+  const dark  = THEMES.filter(x => !x.light);
+  const light = THEMES.filter(x => x.light);
+  grid.innerHTML =
+    `<div class="theme-group-title">${escapeHtml(t('theme.groupDark'))}</div>` +
+    `<div class="theme-grid-inner">${dark.map(cardFor).join('')}</div>` +
+    `<div class="theme-group-title">${escapeHtml(t('theme.groupLight'))}</div>` +
+    `<div class="theme-grid-inner">${light.map(cardFor).join('')}</div>`;
   $$('.theme-card', grid).forEach(b => b.onclick = () => {
     haptic('light');
     setSetting('theme', b.dataset.theme);
