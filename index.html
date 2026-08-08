@@ -697,7 +697,10 @@ html[data-theme="light"] .focus-overlay{background:rgba(244,245,249,.93);}
 .side-empty-hint{font-size:11.5px; color:var(--text-3); padding:6px 10px; line-height:1.5;}
 .side-footer{margin-top:auto; padding-top:10px; border-top:1px solid rgba(255,255,255,.06);}
 
+/* Контент ограничен по ширине: на широком мониторе карточки растягивались
+   на 1600px и читать их было невозможно — строка уходила за поле зрения. */
 .main-view{flex:1; min-width:0; overflow-y:auto; position:relative; padding:26px 30px 60px;}
+.main-view > *{max-width:1080px; margin-left:auto; margin-right:auto;}
 
 .view-header{margin-bottom:22px; display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap;}
 .view-title{font-size:var(--fs-xl); font-weight:600; display:flex; gap:1px; letter-spacing:-.02em;}
@@ -842,6 +845,43 @@ html[data-theme="light"] .focus-overlay{background:rgba(244,245,249,.93);}
 .task-card:hover .tc-del{opacity:1;}
 .tc-del:hover{color:var(--red);}
 .tc-del svg{width:13px; height:13px;}
+
+/* Первый экран без задач: учит пользоваться быстрым вводом */
+.empty-hero{
+  display:flex; flex-direction:column; align-items:center; text-align:center;
+  padding:44px 20px 30px; gap:9px;
+  animation:viewIn .4s var(--ease-soft);
+}
+.eh-icon{font-size:40px; margin-bottom:2px; animation:ehFloat 5s var(--ease-soft) infinite;}
+@keyframes ehFloat{0%,100%{transform:translateY(0);} 50%{transform:translateY(-7px);}}
+.eh-title{font-size:var(--fs-lg); font-weight:600; letter-spacing:-.015em;}
+.eh-sub{font-size:var(--fs-base); color:var(--text-2); max-width:380px; line-height:1.55; margin-bottom:14px;}
+.eh-samples{display:flex; flex-direction:column; gap:7px; width:100%; max-width:420px;}
+.eh-sample{
+  display:flex; align-items:center; gap:10px; width:100%;
+  padding:10px 13px; border-radius:var(--r-md); text-align:left;
+  background:var(--bg-2); border:1px solid var(--glass-border);
+  transition:background .16s var(--ease), border-color .16s var(--ease), transform .16s var(--ease);
+}
+.eh-sample:hover{background:var(--bg-3); border-color:var(--border-strong); transform:translateY(-1px);}
+.eh-plus{color:var(--acc-1); font-weight:600; flex:0 0 auto;}
+.eh-sample code{font-size:var(--fs-sm); color:var(--text-2); font-family:inherit;}
+.eh-hint{font-size:var(--fs-xs); color:var(--text-3); margin-top:14px;}
+
+.cat-edit{opacity:0; color:var(--text-3); flex:0 0 auto; transition:opacity .15s, color .15s;}
+.cat-edit svg{width:12px; height:12px;}
+.side-item:hover .cat-edit{opacity:.75;}
+.cat-edit:hover{color:var(--acc-1); opacity:1 !important;}
+.btn.block{width:100%;}
+
+.toolbar-sort{flex:0 0 auto; width:auto; min-width:132px; padding:8px 30px 8px 11px; font-size:var(--fs-sm);}
+.toolbar-done{flex:0 0 auto;}
+.toolbar-done svg{width:14px; height:14px;}
+.toolbar-done.on{background:var(--bg-3); border-color:var(--acc-1); color:var(--text-1);}
+@media (max-width: 820px){
+  .toolbar-sort{min-width:0; width:108px;}
+  .toolbar-done .lbl-text{display:none;}
+}
 
 .empty-state{display:flex; flex-direction:column; align-items:center; justify-content:center; padding:60px 20px; color:var(--text-3); text-align:center; gap:12px;}
 .empty-state svg{width:38px; height:38px; opacity:.5;}
@@ -1161,7 +1201,7 @@ kbd{
         <div class="side-item" id="favNav"><span class="side-dot" style="background:#ffd166;color:#ffd166"></span><span data-i18n="nav.favorites">Избранное</span><span class="count" id="cntFav">0</span></div>
       <div class="side-item" id="inboxNav"><span class="side-dot" style="background:#6ee7ff;color:#6ee7ff"></span><span data-i18n="nav.inbox">Входящие</span><span class="count" id="cntInbox">0</span></div>
       </div>
-      <div>
+      <div id="prioritySection">
         <div class="side-group-title" data-i18n="nav.priority">Приоритет</div>
         <div id="priorityFilters"></div>
       </div>
@@ -1312,6 +1352,25 @@ kbd{
   </div>
 </div>
 
+<!-- ============ Редактирование категории ============ -->
+<div class="modal-backdrop" id="categoryEditModal">
+  <div class="modal-card" style="width:380px;">
+    <div class="modal-title"><span data-i18n="cat.editTitle">Категория</span>
+      <button class="btn ghost icon" data-close><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="form-row"><label data-i18n="cat.name">Название</label>
+      <input class="text-input" id="ceName" maxlength="40">
+    </div>
+    <div class="form-row"><label data-i18n="cat.color">Цвет</label>
+      <div class="accent-row" id="cePalette"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn ghost push-left" data-close data-i18n="common.cancel">Отмена</button>
+      <button class="btn primary" id="ceSave" data-i18n="common.save">Сохранить</button>
+    </div>
+  </div>
+</div>
+
 <!-- ============ Настройки оформления ============ -->
 <div class="modal-backdrop" id="settingsModal">
   <div class="modal-card" style="width:460px;">
@@ -1364,6 +1423,17 @@ kbd{
         <span style="color:var(--text-3);">—</span>
         <input class="due-time-input" id="setDayEnd" type="text" inputmode="numeric" maxlength="5" placeholder="22:00" style="width:88px;">
         <span style="font-size:var(--fs-xs); color:var(--text-3);" data-i18n="settings.dayRangeSub">границы таймлайна</span>
+      </div>
+    </div>
+
+    <div class="set-group">
+      <div class="set-label" data-i18n="settings.data">Данные</div>
+      <button class="btn block" id="btnExport" style="justify-content:center; margin-bottom:7px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        <span data-i18n="settings.export">Скачать все данные</span>
+      </button>
+      <div style="font-size:var(--fs-xs); color:var(--text-3); line-height:1.5;" data-i18n="settings.exportSub">
+        Файл JSON со всеми задачами, подзадачами и категориями — на случай сбоя.
       </div>
     </div>
 
@@ -1513,6 +1583,14 @@ const I18N = {
     'settings.reset': 'Сбросить', 'settings.saved': 'Настройки сохранены',
     'hotkeys.hint': 'C — новая задача · / — поиск · 1-4 разделы · L/W/D — вид · T — настройки',
     'settings.hotkeys': 'Горячие клавиши',
+    'settings.data': 'Данные',
+    'settings.export': 'Скачать все данные',
+    'settings.exporting': 'Готовим файл…',
+    'settings.exported': 'Сохранено задач: {n}',
+    'settings.exportSub': 'Файл JSON со всеми задачами, подзадачами и категориями — на случай сбоя.',
+    'cat.editTitle': 'Категория', 'cat.name': 'Название', 'cat.color': 'Цвет',
+    'cat.edit': 'Изменить', 'cat.saved': 'Категория обновлена',
+    'cat.nameRequired': 'Введите название',
     'theme.twilight': 'Сумерки',
     'theme.cosmos': 'Космос', 'theme.midnight': 'Полночь', 'theme.ocean': 'Океан',
     'theme.sunset': 'Закат', 'theme.forest': 'Лес', 'theme.mono': 'Графит', 'theme.light': 'Светлая',
@@ -1587,7 +1665,14 @@ const I18N = {
     'common.close': 'Закрыть',
     'view.title': 'Обзор',
     'view.subSpace': 'Пространство',
-    'search.placeholder': 'Поиск задач…',
+    'view.subEmpty': 'Пока пусто — самое время начать',
+    'view.nActive1': 'задача в работе', 'view.nActive2': 'задачи в работе', 'view.nActive5': 'задач в работе',
+    'view.nOverdue': 'просрочено:',
+    'search.placeholder': 'Поиск по названию, заметкам и шагам…',
+    'sort.title': 'Сортировка',
+    'sort.smart': 'Умная', 'sort.due': 'По дедлайну', 'sort.priority': 'По приоритету',
+    'sort.created': 'По добавлению', 'sort.alpha': 'По алфавиту',
+    'sort.done': 'Готовые', 'sort.showDone': 'Показывать выполненные',
     'view.listMode': 'Список',
     'view.weekMode': 'Неделя',
     'week.unscheduled': 'Без даты',
@@ -1607,6 +1692,10 @@ const I18N = {
     'sum.overdue': 'просрочено', 'sum.doneToday': 'сделано сегодня',
     'empty.filtered': 'Ничего не найдено по текущим фильтрам.',
     'empty.none': 'Задач пока нет. Нажмите «Новая задача», чтобы создать первую.',
+    'empty.heroTitle': 'Здесь появятся ваши задачи',
+    'empty.heroSub': 'Просто напишите задачу обычным текстом — Orbit сам поймёт дату, приоритет и категорию.',
+    'empty.heroHint': 'Нажмите на пример, чтобы подставить его в поле ввода',
+    'empty.clearFilters': 'Сбросить фильтры',
     'time.now': 'только что',
     'time.minAgo': '{n} мин назад',
     'time.hAgo': '{n} ч назад',
@@ -1689,6 +1778,14 @@ const I18N = {
     'settings.reset': 'Reset', 'settings.saved': 'Settings saved',
     'hotkeys.hint': 'C — new task · / — search · 1-4 sections · L/W/D — view · T — settings',
     'settings.hotkeys': 'Keyboard shortcuts',
+    'settings.data': 'Data',
+    'settings.export': 'Download all data',
+    'settings.exporting': 'Preparing file…',
+    'settings.exported': 'Tasks saved: {n}',
+    'settings.exportSub': 'A JSON file with every task, subtask and category — just in case.',
+    'cat.editTitle': 'Category', 'cat.name': 'Name', 'cat.color': 'Color',
+    'cat.edit': 'Edit', 'cat.saved': 'Category updated',
+    'cat.nameRequired': 'Enter a name',
     'theme.twilight': 'Twilight',
     'theme.cosmos': 'Cosmos', 'theme.midnight': 'Midnight', 'theme.ocean': 'Ocean',
     'theme.sunset': 'Sunset', 'theme.forest': 'Forest', 'theme.mono': 'Graphite', 'theme.light': 'Light',
@@ -1763,7 +1860,14 @@ const I18N = {
     'common.close': 'Close',
     'view.title': 'Overview',
     'view.subSpace': 'Space',
-    'search.placeholder': 'Search tasks…',
+    'view.subEmpty': 'Nothing here yet — a good time to start',
+    'view.nActive1': 'task in progress', 'view.nActive2': 'tasks in progress', 'view.nActive5': 'tasks in progress',
+    'view.nOverdue': 'overdue:',
+    'search.placeholder': 'Search titles, notes and steps…',
+    'sort.title': 'Sorting',
+    'sort.smart': 'Smart', 'sort.due': 'By due date', 'sort.priority': 'By priority',
+    'sort.created': 'By added', 'sort.alpha': 'A → Z',
+    'sort.done': 'Done', 'sort.showDone': 'Show completed',
     'view.listMode': 'List',
     'view.weekMode': 'Week',
     'week.unscheduled': 'No date',
@@ -1783,6 +1887,10 @@ const I18N = {
     'sum.overdue': 'overdue', 'sum.doneToday': 'done today',
     'empty.filtered': 'Nothing matches the current filters.',
     'empty.none': 'No tasks yet. Tap "New task" to create your first one.',
+    'empty.heroTitle': 'Your tasks will show up here',
+    'empty.heroSub': 'Just write a task in plain words — Orbit figures out the date, priority and category.',
+    'empty.heroHint': 'Tap an example to drop it into the input',
+    'empty.clearFilters': 'Clear filters',
     'time.now': 'just now',
     'time.minAgo': '{n}m ago',
     'time.hAgo': '{n}h ago',
@@ -1841,6 +1949,7 @@ function setLang(lang){
    поэтому сервер о них знать не обязан и работают они мгновенно, без сети.
 --------------------------------------------------------------------------- */
 const SETTINGS_KEY = STORAGE_PREFIX + 'settings';
+const UI_STATE_KEY = STORAGE_PREFIX + 'ui';
 
 /* Превью строится из тех же цветов, что и сама тема, поэтому квадратик
    в настройках показывает настоящий результат, а не абстрактный градиент. */
@@ -1930,6 +2039,8 @@ const UIState = {
   search: '',
   sidebarOpen: false,
   viewMode: 'list', // 'list' | 'week' | 'timeline'
+  sort: 'smart',    // 'smart' | 'due' | 'created' | 'alpha' | 'priority'
+  showCompleted: false,
   inboxOnly: false, // «Входящие» — задачи без даты
   timelineDay: null, // какой день показан в дневном таймлайне
   weekStart: null,  // Date — понедельник текущей отображаемой недели, ставится при первом рендере
@@ -2237,6 +2348,8 @@ const Api = {
   createSubtask:(taskId, text)  => api(`/api/tasks/${taskId}/subtasks`, {method:'POST', body:{text}}),
   updateSubtask:(id, payload)   => api(`/api/subtasks/${id}`, {method:'PATCH', body:payload}),
   deleteSubtask:(id)            => api(`/api/subtasks/${id}`, {method:'DELETE'}),
+  updateCategory:(id, payload)  => api(`/api/categories/${id}`, {method:'PATCH', body:payload}),
+  exportAll:   ()               => api('/api/export'),
 };
 
 /* Единая обработка ошибок API -> текст на нужном языке */
@@ -2352,6 +2465,7 @@ function openLink(url){
 function boot(){
   $('#loaderMark').innerHTML = 'ORBIT'.split('').map((ch,i)=>`<span style="animation-delay:${i*0.05}s">${ch}</span>`).join('');
   applySettings();
+  restoreUIState();
   wireStaticEvents();
   applyI18n();
   initTelegramEnvironment();
@@ -3139,7 +3253,42 @@ function renderSettingsModal(){
   $('#setDayEnd').value = Settings.dayEnd;
 }
 
+/* Выгрузка данных файлом. После истории с пропажей базы возможность
+   забрать свои задачи с собой — не роскошь. */
+async function exportAllData(){
+  const btn = $('#btnExport');
+  const label = $('span[data-i18n]', btn);
+  const original = label.textContent;
+  btn.disabled = true;
+  label.textContent = t('settings.exporting');
+
+  try{
+    const data = await Api.exportAll();
+    const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `orbit-backup-${new Date().toISOString().slice(0,10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    haptic('success');
+    toast(t('settings.exported', {n: (data.tasks || []).length}), 'ok');
+  }catch(err){
+    toast(friendlyError(err), 'err');
+  }finally{
+    btn.disabled = false;
+    label.textContent = original;
+  }
+}
+
 function wireSettingsInputs(){
+  $('#btnExport').onclick = exportAllData;
+  $('#ceSave').onclick = saveCategoryEditor;
+  $('#ceName').addEventListener('keydown', e => {
+    if(e.key === 'Enter'){ e.preventDefault(); saveCategoryEditor(); }
+  });
   const bind = (sel, key, fallback) => {
     const el = $(sel);
     el.addEventListener('input', () => {
@@ -3243,6 +3392,13 @@ async function revokeAllSessions(){
 function renderPriorityFilters(){
   const wrap = $('#priorityFilters');
   wrap.innerHTML = '';
+
+  // Три строки с нулями — шум. Показываем раздел, только когда есть что
+  // фильтровать (или когда фильтр уже выбран, чтобы его можно было снять).
+  const section = $('#prioritySection');
+  const hasTasks = State.tasks.some(x => !x.completed);
+  if(section) section.style.display = (hasTasks || UIState.priorityFilter) ? '' : 'none';
+  if(!hasTasks && !UIState.priorityFilter) return;
   PRIORITY_DEFS.forEach(p => {
     const el = document.createElement('div');
     el.className = 'side-item' + (UIState.priorityFilter === p.id ? ' active' : '');
@@ -3256,6 +3412,44 @@ function renderPriorityFilters(){
   });
 }
 
+/* Редактирование категории: имя и цвет. Раньше можно было только удалить
+   и создать заново, потеряв привязку всех задач. */
+function openCategoryEditor(cat){
+  const modal = $('#categoryEditModal');
+  modal.dataset.id = cat.id;
+  $('#ceName').value = cat.name;
+  const current = categoryColor(cat.id);
+  const grid = $('#cePalette');
+  grid.innerHTML = CATEGORY_PALETTE.map(c =>
+    `<button class="accent-dot${c === current ? ' on' : ''}" type="button" data-c="${c}"
+             style="background:${c};"></button>`).join('');
+  $$('.accent-dot', grid).forEach(b => b.onclick = () => {
+    haptic('light');
+    $$('.accent-dot', grid).forEach(x => x.classList.remove('on'));
+    b.classList.add('on');
+  });
+  modal.classList.add('show');
+  setTimeout(() => $('#ceName').focus(), 60);
+}
+
+async function saveCategoryEditor(){
+  const modal = $('#categoryEditModal');
+  const id = Number(modal.dataset.id);
+  const name = $('#ceName').value.trim();
+  const picked = $('#cePalette .accent-dot.on');
+  if(!name){ toast(t('cat.nameRequired'), 'err'); return; }
+
+  try{
+    await Api.updateCategory(id, {name, color: picked ? picked.dataset.c : null});
+    const cat = State.categories.find(c => c.id === id);
+    if(cat){ cat.name = name; cat.color = picked ? picked.dataset.c : null; }
+    modal.classList.remove('show');
+    haptic('success');
+    toast(t('cat.saved'), 'ok');
+    renderAll();
+  }catch(err){ toast(friendlyError(err), 'err'); }
+}
+
 function renderCategoryFilters(){
   const wrap = $('#categoryFilters');
   wrap.innerHTML = '';
@@ -3263,24 +3457,60 @@ function renderCategoryFilters(){
     wrap.innerHTML = `<div class="side-empty-hint">${t('category.addHint')}</div>`;
     return;
   }
-  State.categories.forEach((c, idx) => {
-    const color = CATEGORY_PALETTE[idx % CATEGORY_PALETTE.length];
-    const count = State.tasks.filter(x => x.category_id === c.id).length;
+  State.categories.forEach(c => {
+    const color = categoryColor(c.id);
+    const count = State.tasks.filter(x => x.category_id === c.id && !x.completed).length;
     const el = document.createElement('div');
     el.className = 'side-item' + (UIState.categoryId === c.id ? ' active' : '');
-    el.innerHTML = `<span class="side-dot" style="background:${color};color:${color}"></span><span>${escapeHtml(c.name)}</span><span class="count">${count}</span><span class="cat-del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></span>`;
+    el.innerHTML = `<span class="side-dot" style="background:${color};color:${color}"></span>
+      <span>${escapeHtml(c.name)}</span>
+      <span class="count">${count}</span>
+      <span class="cat-edit" title="${escapeHtml(t('cat.edit'))}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></span>
+      <span class="cat-del" title="${escapeHtml(t('common.delete'))}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg></span>`;
     el.onclick = (e) => {
-      if(e.target.closest('.cat-del')) return;
+      if(e.target.closest('.cat-del') || e.target.closest('.cat-edit')) return;
       UIState.categoryId = UIState.categoryId === c.id ? null : c.id;
+      saveUIState();
       renderAll();
     };
+    $('.cat-edit', el).onclick = (e) => { e.stopPropagation(); haptic('light'); openCategoryEditor(c); };
     $('.cat-del', el).onclick = (e) => { e.stopPropagation(); confirmDeleteCategory(c); };
     wrap.appendChild(el);
   });
 }
 
+/* Состояние интерфейса переживает перезагрузку: раздражало каждый раз
+   заново выбирать вид и возвращаться к нужному дню. */
+function saveUIState(){
+  try{
+    localStorage.setItem(UI_STATE_KEY, JSON.stringify({
+      viewMode: UIState.viewMode,
+      sort: UIState.sort,
+      showCompleted: UIState.showCompleted,
+      todayOnly: UIState.todayOnly,
+      favOnly: UIState.favOnly,
+      inboxOnly: UIState.inboxOnly,
+      priorityFilter: UIState.priorityFilter,
+      categoryId: UIState.categoryId,
+    }));
+  }catch(_e){}
+}
+
+function restoreUIState(){
+  try{
+    const raw = localStorage.getItem(UI_STATE_KEY);
+    if(!raw) return;
+    const saved = JSON.parse(raw);
+    // Поиск намеренно не восстанавливаем: возвращаться в отфильтрованный
+    // по строке список и не понимать, куда делись задачи, — плохо.
+    ['viewMode','sort','showCompleted','todayOnly','favOnly','inboxOnly','priorityFilter','categoryId']
+      .forEach(k => { if(saved[k] !== undefined) UIState[k] = saved[k]; });
+  }catch(_e){}
+}
+
 function setActiveNavAllTasks(){
   UIState.inboxOnly = false;
+  saveUIState();
   UIState.categoryId = null; UIState.priorityFilter = null; UIState.favOnly = false; UIState.todayOnly = false;
   renderAll();
 }
@@ -3308,6 +3538,10 @@ function animateNumber(el, to, duration=900){
 }
 
 function renderDaySummary(container){
+  // Пустая сводка из одних нулей и «0%» только занимала место и выглядела
+  // так, будто приложение сломано.
+  if(!State.tasks.length) return;
+
   // Раньше здесь был большой пончик по приоритетам. Он занимал пол-экрана,
   // но отвечал не на тот вопрос: утром важно знать, сколько дел сегодня и
   // что просрочено, а не как задачи распределены по важности.
@@ -3353,7 +3587,43 @@ function renderDaySummary(container){
   container.appendChild(card);
 }
 
+const SORTS = [
+  {id:'smart',    labelKey:'sort.smart'},
+  {id:'due',      labelKey:'sort.due'},
+  {id:'priority', labelKey:'sort.priority'},
+  {id:'created',  labelKey:'sort.created'},
+  {id:'alpha',    labelKey:'sort.alpha'},
+];
+
+const PRI_RANK = {high: 0, medium: 1, low: 2};
+
+function sortTasks(list){
+  const arr = list.slice();
+  const byDue = (a, b) => {
+    if(!a.due_date && !b.due_date) return 0;
+    if(!a.due_date) return 1;          // без даты — в конец
+    if(!b.due_date) return -1;
+    return a.due_date.localeCompare(b.due_date);
+  };
+  switch(UIState.sort){
+    case 'due':      arr.sort(byDue); break;
+    case 'priority': arr.sort((a,b) => PRI_RANK[a.priority] - PRI_RANK[b.priority] || byDue(a,b)); break;
+    case 'created':  arr.sort((a,b) => String(b.created_at).localeCompare(String(a.created_at))); break;
+    case 'alpha':    arr.sort((a,b) => a.text.localeCompare(b.text, currentLang === 'ru' ? 'ru' : 'en')); break;
+    default:
+      // «Умная»: сначала просроченное, затем по приоритету, затем по дате
+      arr.sort((a,b) => {
+        const ao = a.due_date && (dueDateStatus(a.due_date)||{}).kind === 'overdue' ? 0 : 1;
+        const bo = b.due_date && (dueDateStatus(b.due_date)||{}).kind === 'overdue' ? 0 : 1;
+        return ao - bo || PRI_RANK[a.priority] - PRI_RANK[b.priority] || byDue(a,b);
+      });
+  }
+  // Выполненные всегда внизу
+  return arr.sort((a,b) => (a.completed ? 1 : 0) - (b.completed ? 1 : 0));
+}
+
 function taskMatchesFilters(tk){
+  if(!UIState.showCompleted && tk.completed && !UIState.search) return false;
   if(UIState.inboxOnly && tk.due_date) return false;
   if(UIState.favOnly && !tk.is_favorite) return false;
   if(UIState.todayOnly && !isDueToday(tk.due_date)) return false;
@@ -3361,7 +3631,10 @@ function taskMatchesFilters(tk){
   if(UIState.categoryId && tk.category_id !== UIState.categoryId) return false;
   if(UIState.search){
     const q = UIState.search.toLowerCase();
-    if(!tk.text.toLowerCase().includes(q)) return false;
+    const inText = tk.text.toLowerCase().includes(q);
+    const inNotes = (tk.notes || '').toLowerCase().includes(q);
+    const inSubs = (tk.subtasks || []).some(x => x.text.toLowerCase().includes(q));
+    if(!inText && !inNotes && !inSubs) return false;
   }
   return true;
 }
@@ -3377,8 +3650,13 @@ function dueBadgeHtml(tk){
 }
 
 function categoryColor(catId){
-  const idx = State.categories.findIndex(c => c.id === catId);
-  return idx === -1 ? null : CATEGORY_PALETTE[idx % CATEGORY_PALETTE.length];
+  const cat = State.categories.find(c => c.id === catId);
+  if(!cat) return null;
+  // Сохранённый цвет важнее позиции в списке. Раньше цвет брался по индексу,
+  // поэтому удаление одной категории перекрашивало все следующие.
+  if(cat.color) return cat.color;
+  // Запасной вариант привязан к идентификатору — он не меняется.
+  return CATEGORY_PALETTE[cat.id % CATEGORY_PALETTE.length];
 }
 function categoryName(catId){
   const c = State.categories.find(c => c.id === catId);
@@ -3386,17 +3664,47 @@ function categoryName(catId){
 }
 
 function renderTasksGrid(container){
-  const filtered = State.tasks.filter(taskMatchesFilters).sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+  const filtered = sortTasks(State.tasks.filter(taskMatchesFilters));
 
   if(!filtered.length){
     const anyFilterActive = UIState.favOnly || UIState.todayOnly || UIState.inboxOnly || UIState.priorityFilter || UIState.categoryId || UIState.search;
-    container.innerHTML = `<div class="empty-state">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg>
-      <div class="t">${anyFilterActive ? t('empty.filtered') : t('empty.none')}</div>
-      ${anyFilterActive ? '' : `<button class="btn primary" id="emptyStateCreateBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>${t('task.new')}</button>`}
+    if(anyFilterActive){
+      container.innerHTML = `<div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4.3-4.3"/></svg>
+        <div class="t">${escapeHtml(t('empty.filtered'))}</div>
+        <button class="btn" id="emptyClearBtn">${escapeHtml(t('empty.clearFilters'))}</button>
+      </div>`;
+      const cb = $('#emptyClearBtn', container);
+      if(cb) cb.onclick = () => {
+        UIState.favOnly = UIState.todayOnly = UIState.inboxOnly = false;
+        UIState.priorityFilter = null; UIState.categoryId = null; UIState.search = '';
+        renderAll();
+      };
+      return;
+    }
+
+    // Первый запуск: вместо кнопки, дублирующей ту, что уже есть в шапке,
+    // показываем живые примеры. По ним видно, что задачу можно написать
+    // текстом — иначе про быстрый ввод никто не догадается.
+    const samples = currentLang === 'ru'
+      ? ['завтра позвонить маме !высокий', 'в пятницу сдать отчёт #работа', 'каждый понедельник тренировка 19:00']
+      : ['call mom tomorrow !high', 'submit report on friday #work', 'gym every monday 19:00'];
+
+    container.innerHTML = `<div class="empty-hero">
+      <div class="eh-icon">🪐</div>
+      <div class="eh-title">${escapeHtml(t('empty.heroTitle'))}</div>
+      <div class="eh-sub">${escapeHtml(t('empty.heroSub'))}</div>
+      <div class="eh-samples">
+        ${samples.map(v => `<button class="eh-sample" data-v="${escapeHtml(v)}">
+            <span class="eh-plus">+</span><code>${escapeHtml(v)}</code></button>`).join('')}
+      </div>
+      <div class="eh-hint">${escapeHtml(t('empty.heroHint'))}</div>
     </div>`;
-    const btn = $('#emptyStateCreateBtn', container);
-    if(btn) btn.onclick = () => openTaskModal(null);
+    $$('.eh-sample', container).forEach(b => b.onclick = () => {
+      haptic('light');
+      const qi = $('#quickAddInput');
+      if(qi){ qi.value = b.dataset.v; qi.focus(); }
+    });
     return;
   }
 
@@ -3584,7 +3892,7 @@ function renderAll(){
   header.innerHTML = `
     <div>
       <div class="view-title display">${title.split('').map(ch => `<span>${ch === ' ' ? '&nbsp;' : ch}</span>`).join('')}</div>
-      <div class="view-sub">${UIState.inboxOnly ? escapeHtml(t('inbox.sub')) : t('view.subSpace') + ' · ORBIT'}</div>
+      ${UIState.inboxOnly ? `<div class="view-sub">${escapeHtml(t('inbox.sub'))}</div>` : `<div class="view-sub">${escapeHtml(viewSubtitle())}</div>`}
     </div>
   `;
   main.appendChild(header);
@@ -3609,6 +3917,13 @@ function renderAll(){
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
       <input class="text-input" id="searchInput" placeholder="${t('search.placeholder')}" value="${escapeHtml(UIState.search)}">
     </div>
+    <select class="select-field toolbar-sort" id="sortSelect" title="${t('sort.title')}">
+      ${SORTS.map(x => `<option value="${x.id}">${escapeHtml(t(x.labelKey))}</option>`).join('')}
+    </select>
+    <button class="btn toolbar-done" id="toggleCompleted" title="${t('sort.showDone')}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12l5 5L20 7"/></svg>
+      <span class="lbl-text">${escapeHtml(t('sort.done'))}</span>
+    </button>
     <div class="view-toggle" id="viewToggle">
       <button data-v="list" class="${UIState.viewMode === 'list' ? 'on' : ''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>${t('view.listMode')}</button>
       <button data-v="week" class="${UIState.viewMode === 'week' ? 'on' : ''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg>${t('view.weekMode')}</button>
@@ -3622,9 +3937,25 @@ function renderAll(){
     clearTimeout(searchTimer);
     searchTimer = setTimeout(renderTasksGridOnly, 150);
   };
+  const sortSel = $('#sortSelect', toolbar);
+  if(sortSel){
+    sortSel.value = UIState.sort;
+    sortSel.onchange = () => { UIState.sort = sortSel.value; saveUIState(); renderAll(); };
+  }
+  const doneBtn = $('#toggleCompleted', toolbar);
+  if(doneBtn){
+    doneBtn.classList.toggle('on', UIState.showCompleted);
+    doneBtn.onclick = () => {
+      haptic('light');
+      UIState.showCompleted = !UIState.showCompleted;
+      saveUIState(); renderAll();
+    };
+  }
+
   $$('#viewToggle button', toolbar).forEach(b => b.onclick = () => {
     haptic('light');
     UIState.viewMode = b.dataset.v;
+    saveUIState();
     renderAll();
     const mv = $('#mainView');
     if(mv && Settings.anim){
@@ -3908,6 +4239,27 @@ function buildWeekTaskChip(tk){
   chip.addEventListener('dragend', () => chip.classList.remove('dragging'));
   chip.addEventListener('click', () => openTaskModal(tk));
   return chip;
+}
+
+/* Подзаголовок вместо декоративного «Пространство · ORBIT»: показывает
+   то, что человеку полезно знать про текущий список. */
+function viewSubtitle(){
+  const active = State.tasks.filter(x => !x.completed).length;
+  if(!State.tasks.length) return t('view.subEmpty');
+  const overdue = State.tasks.filter(x => !x.completed && x.due_date &&
+    (dueDateStatus(x.due_date) || {}).kind === 'overdue').length;
+  const parts = [plural(active, t('view.nActive1'), t('view.nActive2'), t('view.nActive5'))];
+  if(overdue) parts.push(t('view.nOverdue') + ' ' + overdue);
+  return parts.join(' · ');
+}
+
+/* Русский требует трёх форм: 1 задача, 2 задачи, 5 задач. */
+function plural(n, one, few, many){
+  const mod10 = n % 10, mod100 = n % 100;
+  let form = many;
+  if(mod10 === 1 && mod100 !== 11) form = one;
+  else if(mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) form = few;
+  return `${n} ${form}`;
 }
 
 function viewTitleText(){
