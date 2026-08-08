@@ -109,21 +109,27 @@ a{color:inherit;}
 :focus-visible{outline:2px solid rgba(140,160,255,.7); outline-offset:2px;}
 
 /* ============================================================ Loader ============================================================ */
+/* Заставка: полёт сквозь звёзды. Раньше здесь крутились два CSS-кольца —
+   выглядело как индикатор загрузки браузера, а не как заставка приложения. */
 #loader{
   position:fixed; inset:0; z-index:9999;
-  display:flex; flex-direction:column; align-items:center; justify-content:center;
-  background:var(--bg-0);
+  background:#05070f;
   transition:opacity .9s var(--ease), filter .9s var(--ease);
 }
 #loader.hide{opacity:0; filter:blur(12px); pointer-events:none;}
-.loader-mark{display:flex; gap:2px; font-size:15px; letter-spacing:.5em; text-transform:uppercase; color:var(--text-2); margin-bottom:28px;}
-.loader-mark span{opacity:0; transform:translateY(10px); animation:letterIn .7s var(--ease-soft) forwards;}
-.loader-orbit{position:relative; width:64px; height:64px; margin-bottom:26px;}
-.loader-orbit .ring{position:absolute; inset:0; border-radius:50%; border:1px solid rgba(255,255,255,.12); border-top-color:var(--sky); animation:spin 1.4s linear infinite;}
-.loader-orbit .ring:nth-child(2){inset:12px; border-top-color:var(--amber); animation-duration:1s; animation-direction:reverse;}
-.loader-orbit .dot{position:absolute; top:50%; left:50%; width:6px; height:6px; margin:-3px; border-radius:50%; background:var(--sky); box-shadow:0 0 12px 2px var(--sky-glow);}
-.loader-status{font-size:12px; color:var(--text-3); letter-spacing:.08em; min-height:16px;}
-@keyframes spin{to{transform:rotate(360deg);}}
+#loaderCanvas{position:absolute; inset:0; width:100%; height:100%; display:block;}
+.loader-inner{
+  position:absolute; inset:0; z-index:2;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:16px; pointer-events:none;
+}
+.loader-mark{
+  display:flex; gap:3px; font-size:20px; letter-spacing:.42em; text-transform:uppercase;
+  font-family:'Space Grotesk',sans-serif; font-weight:600; color:#eaf0ff;
+  text-shadow:0 0 26px rgba(120,170,255,.55);
+}
+.loader-mark span{opacity:0; transform:translateY(14px); animation:letterIn .8s var(--ease-soft) forwards;}
+.loader-status{font-size:12px; color:#8b98b8; letter-spacing:.08em; min-height:16px;}
 @keyframes letterIn{to{opacity:1; transform:translateY(0);}}
 
 /* ============================================================ Login screen ============================================================ */
@@ -874,12 +880,116 @@ html[data-theme="light"] .focus-overlay{background:rgba(244,245,249,.93);}
 .cat-edit:hover{color:var(--acc-1); opacity:1 !important;}
 .btn.block{width:100%;}
 
-.toolbar-sort{flex:0 0 auto; width:auto; min-width:132px; padding:8px 30px 8px 11px; font-size:var(--fs-sm);}
+/* ============================================================
+   Барабаны выбора времени.
+
+   Раньше время набиралось руками в поле «--:--» — на телефоне это
+   неудобно и легко ошибиться. Здесь два колеса: часы и минуты,
+   прокручиваются пальцем и защёлкиваются на ближайшем значении.
+============================================================ */
+.time-wheels{
+  display:flex; align-items:center; justify-content:center; gap:6px;
+  position:relative; margin:4px auto 2px; width:100%;
+}
+.tw{
+  height:132px; width:74px; overflow-y:scroll; overscroll-behavior:contain;
+  scroll-snap-type:y mandatory; scrollbar-width:none;
+  -webkit-mask-image:linear-gradient(to bottom, transparent, #000 26%, #000 74%, transparent);
+          mask-image:linear-gradient(to bottom, transparent, #000 26%, #000 74%, transparent);
+}
+.tw::-webkit-scrollbar{display:none;}
+.tw-item{
+  height:44px; display:flex; align-items:center; justify-content:center;
+  scroll-snap-align:center; font-size:19px; color:var(--text-3);
+  font-variant-numeric:tabular-nums; cursor:pointer;
+  transition:color .18s var(--ease), transform .18s var(--ease);
+}
+.tw-item.on{color:var(--text-1); font-weight:600; transform:scale(1.16);}
+.tw-pad{height:44px;}
+.tw-colon{font-size:19px; color:var(--text-2); font-weight:600; padding-bottom:2px;}
+/* Подсветка центральной строки — видно, что именно выбрано */
+.tw-frame{
+  position:absolute; left:50%; transform:translateX(-50%); width:166px;
+  top:50%; height:44px; margin-top:-22px;
+  border-top:1px solid var(--glass-border); border-bottom:1px solid var(--glass-border);
+  background:rgba(255,255,255,.03); border-radius:var(--r-sm); pointer-events:none;
+}
+html[data-theme="light"] .tw-frame{background:rgba(16,20,35,.04);}
+
+/* ============================================================
+   Свой выпадающий список.
+
+   Системный <select> на телефоне открывается белым листом снизу и
+   полностью рушит тёмную тему — это было видно на скриншотах.
+   Здесь тот же смысл, но в оформлении приложения.
+============================================================ */
+.pick{position:relative;}
+.pick-btn{
+  width:100%; display:flex; align-items:center; gap:8px;
+  background:var(--bg-2); border:1px solid var(--glass-border);
+  border-radius:var(--r-md); padding:9px 12px; font-size:var(--fs-base);
+  color:var(--text-1); cursor:pointer; text-align:left;
+  transition:border-color .16s var(--ease), background .16s var(--ease);
+}
+.pick-btn:hover{background:var(--bg-3);}
+.pick.open .pick-btn{border-color:var(--acc-1);}
+.pick-btn .pk-dot{width:8px; height:8px; border-radius:50%; flex:0 0 auto;}
+.pick-btn .pk-label{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.pick-btn .pk-arrow{width:13px; height:13px; color:var(--text-3); flex:0 0 auto;
+  transition:transform .2s var(--ease);}
+.pick.open .pk-arrow{transform:rotate(180deg);}
+
+.pick-menu{
+  position:absolute; left:0; right:0; top:calc(100% + 5px); z-index:120;
+  background:var(--bg-1); border:1px solid var(--border-strong);
+  border-radius:var(--r-md); padding:5px; box-shadow:var(--sh-3);
+  max-height:260px; overflow-y:auto;
+  opacity:0; transform:translateY(-5px); pointer-events:none;
+  transition:opacity .16s var(--ease), transform .16s var(--ease-soft);
+}
+.pick.open .pick-menu{opacity:1; transform:translateY(0); pointer-events:auto;}
+.pick.up .pick-menu{top:auto; bottom:calc(100% + 5px);}
+.pick-opt{
+  display:flex; align-items:center; gap:9px; width:100%;
+  padding:8px 10px; border-radius:var(--r-sm); font-size:var(--fs-base);
+  color:var(--text-2); text-align:left; transition:background .12s, color .12s;
+}
+.pick-opt:hover{background:var(--bg-3); color:var(--text-1);}
+.pick-opt.on{background:var(--bg-3); color:var(--text-1); font-weight:500;}
+.pick-opt .pk-dot{width:8px; height:8px; border-radius:50%; flex:0 0 auto;}
+.pick-opt .pk-check{width:13px; height:13px; margin-left:auto; color:var(--acc-1); opacity:0; flex:0 0 auto;}
+.pick-opt.on .pk-check{opacity:1;}
+.pick-opt span{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+
+/* На узком экране список выезжает снизу, как привычная нативная шторка,
+   но в наших цветах */
+@media (max-width: 620px){
+  .pick-menu{
+    position:fixed; left:0; right:0; bottom:0; top:auto;
+    border-radius:18px 18px 0 0; padding:10px 10px calc(14px + var(--safe-bottom));
+    max-height:62vh; transform:translateY(100%);
+    box-shadow:0 -14px 40px -10px rgba(0,0,0,.7);
+  }
+  .pick.open .pick-menu{transform:translateY(0);}
+  .pick-menu::before{
+    content:''; display:block; width:38px; height:4px; border-radius:4px;
+    background:rgba(255,255,255,.2); margin:0 auto 10px;
+  }
+  .pick-opt{padding:13px 12px; font-size:var(--fs-md);}
+  .pick-scrim{
+    position:fixed; inset:0; z-index:119; background:rgba(0,0,0,.5);
+    opacity:0; pointer-events:none; transition:opacity .2s;
+  }
+  .pick.open .pick-scrim{opacity:1; pointer-events:auto;}
+}
+
+.toolbar-sort{flex:0 0 auto; width:auto; min-width:190px;}
+.toolbar-sort .pick-btn{padding:8px 11px; font-size:var(--fs-sm);}
 .toolbar-done{flex:0 0 auto;}
 .toolbar-done svg{width:14px; height:14px;}
 .toolbar-done.on{background:var(--bg-3); border-color:var(--acc-1); color:var(--text-1);}
 @media (max-width: 820px){
-  .toolbar-sort{min-width:0; width:108px;}
+  .toolbar-sort{min-width:0; flex:1 1 150px;}
   .toolbar-done .lbl-text{display:none;}
 }
 
@@ -1155,9 +1265,11 @@ kbd{
 
 <!-- ============ Loader ============ -->
 <div id="loader">
-  <div class="loader-mark" id="loaderMark"></div>
-  <div class="loader-orbit"><div class="ring"></div><div class="ring"></div><div class="dot"></div></div>
-  <div class="loader-status" id="loaderStatus">Инициализация…</div>
+  <canvas id="loaderCanvas"></canvas>
+  <div class="loader-inner">
+    <div class="loader-mark" id="loaderMark"></div>
+    <div class="loader-status" id="loaderStatus">Инициализация…</div>
+  </div>
 </div>
 
 <!-- ============ Login screen ============ -->
@@ -1362,7 +1474,7 @@ kbd{
       </div>
       <div class="icon-grid" id="tmIconGrid" hidden style="margin-top:8px;"></div>
     </div>
-    <div class="form-row"><label data-i18n="task.category">Категория</label><select class="select-field" id="tmCategory"></select></div>
+    <div class="form-row"><label data-i18n="task.category">Категория</label><div id="tmCategory"></div></div>
     <div class="form-row"><label data-i18n="task.dueDate">Дедлайн</label>
       <button class="due-field" id="dueField" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 10h18M8 2v4M16 2v4"/></svg>
@@ -1381,11 +1493,19 @@ kbd{
         <div class="due-grid" id="dueGrid"></div>
         <div class="due-time-row">
           <span class="lbl" data-i18n="due.timeLabel">Время</span>
-          <input class="due-time-input" id="dueTimeInput" type="text" inputmode="numeric" placeholder="--:--" maxlength="5">
-          <button class="due-chip" type="button" data-time="09:00">09:00</button>
-          <button class="due-chip" type="button" data-time="12:00">12:00</button>
-          <button class="due-chip" type="button" data-time="18:00">18:00</button>
-          <button class="due-chip" type="button" data-time="21:00">21:00</button>
+          <div class="time-wheels" id="timeWheels">
+            <div class="tw-frame"></div>
+            <div class="tw" id="twHours"></div>
+            <span class="tw-colon">:</span>
+            <div class="tw" id="twMinutes"></div>
+          </div>
+          <div class="due-chips" style="margin:8px 0 0; justify-content:center; width:100%;">
+            <button class="due-chip" type="button" data-time="09:00">09:00</button>
+            <button class="due-chip" type="button" data-time="12:00">12:00</button>
+            <button class="due-chip" type="button" data-time="18:00">18:00</button>
+            <button class="due-chip" type="button" data-time="21:00">21:00</button>
+            <button class="due-chip" type="button" data-time="" data-i18n="due.noTime">Без времени</button>
+          </div>
         </div>
       </div>
     </div>
@@ -1759,6 +1879,7 @@ const I18N = {
     'task.dueClear': 'Без дедлайна',
     'due.none': 'Без дедлайна',
     'due.timeLabel': 'Время',
+    'due.noTime': 'Без времени',
     'due.today': 'Сегодня',
     'due.tomorrow': 'Завтра',
     'due.weekend': 'В выходные',
@@ -1972,6 +2093,7 @@ const I18N = {
     'task.dueClear': 'No due date',
     'due.none': 'No due date',
     'due.timeLabel': 'Time',
+    'due.noTime': 'No time',
     'due.today': 'Today',
     'due.tomorrow': 'Tomorrow',
     'due.weekend': 'This weekend',
@@ -2161,6 +2283,96 @@ function hhmmToMin(str, fallback){
   if(h > 23 || mi > 59) return fallback;
   return h * 60 + mi;
 }
+
+/* ---------------------------------------------------------------------------
+   1.6. Свой выпадающий список
+
+   Заменяет <select>: системный на телефоне открывается белым листом и
+   ломает тёмную тему. Компонент один и используется везде, где раньше
+   был <select> — категория задачи и сортировка списка.
+--------------------------------------------------------------------------- */
+let openPicker = null;
+
+function createPicker(host, {options, value, onChange, placeholder}){
+  host.innerHTML = '';
+  host.classList.add('pick');
+
+  const scrim = document.createElement('div');
+  scrim.className = 'pick-scrim';
+
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'pick-btn';
+
+  const menu = document.createElement('div');
+  menu.className = 'pick-menu';
+
+  let current = value;
+
+  const arrowSvg = '<svg class="pk-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg>';
+  const checkSvg = '<svg class="pk-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M4 12l5 5L20 7"/></svg>';
+
+  function paintButton(){
+    const opt = options.find(o => String(o.value) === String(current));
+    const label = opt ? opt.label : (placeholder || '');
+    const dot = opt && opt.color
+      ? `<span class="pk-dot" style="background:${opt.color}"></span>` : '';
+    btn.innerHTML = `${dot}<span class="pk-label">${escapeHtml(label)}</span>${arrowSvg}`;
+  }
+
+  function paintMenu(){
+    menu.innerHTML = options.map(o => {
+      const on = String(o.value) === String(current);
+      const dot = o.color ? `<span class="pk-dot" style="background:${o.color}"></span>` : '';
+      return `<button type="button" class="pick-opt${on ? ' on' : ''}" data-v="${escapeHtml(String(o.value))}">
+        ${dot}<span>${escapeHtml(o.label)}</span>${checkSvg}</button>`;
+    }).join('');
+
+    $$('.pick-opt', menu).forEach(b => b.onclick = (e) => {
+      e.stopPropagation();
+      haptic('light');
+      current = b.dataset.v;
+      paintButton(); paintMenu(); close();
+      const opt = options.find(o => String(o.value) === String(current));
+      onChange(opt ? opt.value : current);
+    });
+  }
+
+  function open(){
+    if(openPicker && openPicker !== host) openPicker.classList.remove('open');
+    // Если места снизу мало — раскрываем вверх, чтобы список не уехал за экран
+    const rect = btn.getBoundingClientRect();
+    host.classList.toggle('up', window.innerHeight - rect.bottom < 240 && rect.top > 260);
+    host.classList.add('open');
+    openPicker = host;
+  }
+  function close(){ host.classList.remove('open'); if(openPicker === host) openPicker = null; }
+
+  btn.onclick = (e) => {
+    e.stopPropagation();
+    haptic('light');
+    host.classList.contains('open') ? close() : open();
+  };
+  scrim.onclick = close;
+
+  host.appendChild(scrim);
+  host.appendChild(btn);
+  host.appendChild(menu);
+  paintButton(); paintMenu();
+
+  return {
+    get value(){ return current; },
+    set value(v){ current = v; paintButton(); paintMenu(); },
+    setOptions(next){ options = next; paintButton(); paintMenu(); },
+    close,
+  };
+}
+
+// Клик мимо и Esc закрывают открытый список
+document.addEventListener('click', () => { if(openPicker) openPicker.classList.remove('open'); });
+document.addEventListener('keydown', (e) => {
+  if(e.key === 'Escape' && openPicker){ openPicker.classList.remove('open'); openPicker = null; }
+});
 
 /* ---------------------------------------------------------------------------
    1.7. Офлайн-хранилище (IndexedDB)
@@ -2712,7 +2924,134 @@ function openLink(url){
   return true;
 }
 
+/* ---------------------------------------------------------------------------
+   Заставка: полёт сквозь звёздное поле.
+
+   Звёзды расставлены в трёхмерном пространстве и летят на зрителя.
+   Перспектива честная: экранные координаты считаются делением на глубину,
+   поэтому ближние звёзды разлетаются от центра быстрее дальних, а к концу
+   загрузки поле разгоняется — получается ощущение прыжка.
+--------------------------------------------------------------------------- */
+function initLoaderSpace(){
+  const canvas = $('#loaderCanvas');
+  if(!canvas || !canvas.getContext) return () => {};
+  const ctx = canvas.getContext('2d');
+  if(!ctx) return () => {};
+
+  let w = 0, h = 0, cx = 0, cy = 0, raf = null, alive = true;
+  let speed = 0.55;          // базовая скорость
+  let boost = 0;             // разгон в конце
+  const DEPTH = 900;
+  const stars = [];
+
+  function resize(){
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    w = window.innerWidth; h = window.innerHeight;
+    canvas.width = w * dpr; canvas.height = h * dpr;
+    canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    cx = w / 2; cy = h / 2;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const count = Math.min(420, Math.max(160, Math.round((w * h) / 3400)));
+  for(let i = 0; i < count; i++){
+    stars.push({
+      x: (Math.random() - 0.5) * w * 2.2,
+      y: (Math.random() - 0.5) * h * 2.2,
+      z: Math.random() * DEPTH,
+      pz: 0,
+      warm: Math.random() < 0.1,
+    });
+  }
+
+  function frame(){
+    if(!alive) return;
+
+    // Лёгкий шлейф вместо полной очистки — звёзды оставляют след
+    ctx.fillStyle = 'rgba(5,7,15,0.32)';
+    ctx.fillRect(0, 0, w, h);
+
+    // Туманность по центру, чтобы фон не был плоско-чёрным
+    const neb = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(w, h) * 0.55);
+    neb.addColorStop(0,   'rgba(70,110,220,.055)');
+    neb.addColorStop(0.5, 'rgba(40,60,150,.03)');
+    neb.addColorStop(1,   'rgba(0,0,0,0)');
+    ctx.fillStyle = neb;
+    ctx.fillRect(0, 0, w, h);
+
+    const v = speed + boost;
+
+    for(const s of stars){
+      s.pz = s.z;
+      s.z -= v * 9;
+
+      // Улетела за спину — возвращаем вглубь на случайное место
+      if(s.z <= 1){
+        s.z = DEPTH;
+        s.pz = DEPTH;
+        s.x = (Math.random() - 0.5) * w * 2.2;
+        s.y = (Math.random() - 0.5) * h * 2.2;
+      }
+
+      const k  = 320 / s.z;
+      const px = cx + s.x * k;
+      const py = cy + s.y * k;
+      if(px < -60 || px > w + 60 || py < -60 || py > h + 60) continue;
+
+      const kp = 320 / s.pz;
+      const ox = cx + s.x * kp;
+      const oy = cy + s.y * kp;
+
+      const near = 1 - s.z / DEPTH;        // 0 вдали, 1 у самого зрителя
+      const alpha = Math.min(1, 0.12 + near * 1.1);
+      const width = 0.4 + near * 2.2;
+
+      ctx.beginPath();
+      ctx.moveTo(ox, oy);
+      ctx.lineTo(px, py);
+      ctx.strokeStyle = s.warm
+        ? `rgba(255,214,170,${alpha.toFixed(3)})`
+        : `rgba(198,222,255,${alpha.toFixed(3)})`;
+      ctx.lineWidth = width;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+
+      // Ближние звёзды получают ореол — поле выглядит объёмнее
+      if(near > 0.82){
+        const g = ctx.createRadialGradient(px, py, 0, px, py, width * 5);
+        g.addColorStop(0, `rgba(200,225,255,${(alpha * 0.45).toFixed(3)})`);
+        g.addColorStop(1, 'rgba(200,225,255,0)');
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.arc(px, py, width * 5, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+
+    raf = requestAnimationFrame(frame);
+  }
+  frame();
+
+  // Возвращаем функцию завершения: перед скрытием заставки поле
+  // разгоняется, и переход в приложение читается как прибытие.
+  return function finish(){
+    const t0 = performance.now();
+    (function ramp(){
+      if(!alive) return;
+      const p = Math.min(1, (performance.now() - t0) / 700);
+      boost = p * p * 7;                       // плавный разгон
+      if(p < 1) requestAnimationFrame(ramp);
+      else setTimeout(() => {
+        alive = false;
+        if(raf) cancelAnimationFrame(raf);
+        window.removeEventListener('resize', resize);
+      }, 900);
+    })();
+  };
+}
+
 function boot(){
+  const finishSpace = initLoaderSpace();
   $('#loaderMark').innerHTML = 'ORBIT'.split('').map((ch,i)=>`<span style="animation-delay:${i*0.05}s">${ch}</span>`).join('');
   applySettings();
   restoreUIState();
@@ -2731,7 +3070,8 @@ function boot(){
 
   setTimeout(async () => {
     clearInterval(interval);
-    $('#loader').classList.add('hide');
+    finishSpace();                    // разгон звёзд перед уходом заставки
+    setTimeout(() => $('#loader').classList.add('hide'), 420);
 
     // Внутри Telegram Mini App — пробуем войти автоматически, минуя экран
     // с номером телефона: Telegram уже подтвердил личность пользователя.
@@ -4455,9 +4795,7 @@ function renderAll(){
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
       <input class="text-input" id="searchInput" placeholder="${t('search.placeholder')}" value="${escapeHtml(UIState.search)}">
     </div>
-    <select class="select-field toolbar-sort" id="sortSelect" title="${t('sort.title')}">
-      ${SORTS.map(x => `<option value="${x.id}">${escapeHtml(t(x.labelKey))}</option>`).join('')}
-    </select>
+    <div class="toolbar-sort" id="sortSelect" title="${t('sort.title')}"></div>
     <button class="btn toolbar-done" id="toggleCompleted" title="${t('sort.showDone')}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12l5 5L20 7"/></svg>
       <span class="lbl-text">${escapeHtml(t('sort.done'))}</span>
@@ -4475,10 +4813,15 @@ function renderAll(){
     clearTimeout(searchTimer);
     searchTimer = setTimeout(renderTasksGridOnly, 150);
   };
-  const sortSel = $('#sortSelect', toolbar);
-  if(sortSel){
-    sortSel.value = UIState.sort;
-    sortSel.onchange = () => { UIState.sort = sortSel.value; saveUIState(); renderAll(); };
+  const sortHost = $('#sortSelect', toolbar);
+  if(sortHost){
+    createPicker(sortHost, {
+      // Подпись «Сортировка» прямо в кнопке: без неё было непонятно,
+      // что означает «Умная / По дедлайну» само по себе.
+      options: SORTS.map(x => ({value: x.id, label: t('sort.title') + ': ' + t(x.labelKey)})),
+      value: UIState.sort,
+      onChange: (v) => { UIState.sort = v; saveUIState(); renderAll(); },
+    });
   }
   const doneBtn = $('#toggleCompleted', toolbar);
   if(doneBtn){
@@ -5053,6 +5396,103 @@ function renderDueCalendar(){
   });
 }
 
+/* ===========================================================================
+   Барабаны времени. Прокрутка «защёлкивается» на значении через CSS
+   scroll-snap, а выбранным считается то, что оказалось по центру.
+   Момент выбора ловим по паузе в прокрутке — событие scrollend
+   поддерживают ещё не все браузеры.
+=========================================================================== */
+const TW = {hours: null, minutes: null, timer: null, ready: false};
+
+function buildTimeWheels(){
+  const hostH = $('#twHours');
+  const hostM = $('#twMinutes');
+  if(!hostH || !hostM || TW.ready) return;
+
+  const cell = (v, txt) => `<div class="tw-item" data-v="${v}">${txt}</div>`;
+  const pad = '<div class="tw-pad"></div>';
+
+  hostH.innerHTML = pad + Array.from({length: 24}, (_, h) =>
+    cell(h, String(h).padStart(2, '0'))).join('') + pad;
+  // Минуты с шагом 5: попасть пальцем в одну из 60 строк тяжело,
+  // а точность до минуты в дедлайнах не нужна.
+  hostM.innerHTML = pad + Array.from({length: 12}, (_, i) =>
+    cell(i * 5, String(i * 5).padStart(2, '0'))).join('') + pad;
+
+  [hostH, hostM].forEach(host => {
+    host.addEventListener('scroll', () => {
+      clearTimeout(TW.timer);
+      TW.timer = setTimeout(() => commitTimeWheels(true), 130);
+      highlightWheel(host);
+    }, {passive: true});
+
+    $$('.tw-item', host).forEach(el => el.onclick = () => {
+      haptic('light');
+      el.scrollIntoView({block: 'center', behavior: 'smooth'});
+    });
+  });
+
+  TW.ready = true;
+  syncTimeWheels();
+}
+
+function wheelValue(host){
+  const items = $$('.tw-item', host);
+  if(!items.length) return null;
+  const mid = host.scrollTop + host.clientHeight / 2;
+  let best = items[0], bestDist = Infinity;
+  items.forEach(el => {
+    const c = el.offsetTop + el.offsetHeight / 2;
+    const d = Math.abs(c - mid);
+    if(d < bestDist){ bestDist = d; best = el; }
+  });
+  return {el: best, value: Number(best.dataset.v)};
+}
+
+function highlightWheel(host){
+  const cur = wheelValue(host);
+  if(!cur) return;
+  $$('.tw-item', host).forEach(el => el.classList.toggle('on', el === cur.el));
+}
+
+function commitTimeWheels(fromUser){
+  const h = wheelValue($('#twHours'));
+  const m = wheelValue($('#twMinutes'));
+  if(!h || !m) return;
+  const value = `${String(h.value).padStart(2,'0')}:${String(m.value).padStart(2,'0')}`;
+  if(DueState.time === value) return;
+
+  if(fromUser) haptic('light');
+  if(!DueState.date) dueSet(ymd(new Date()), value);
+  else { DueState.time = value; renderDueField(); }
+}
+
+/* Ставим барабаны на текущее значение (или на ближайший круглый час) */
+function syncTimeWheels(){
+  const hostH = $('#twHours'), hostM = $('#twMinutes');
+  if(!hostH || !hostM) return;
+
+  let hh, mm;
+  if(DueState.time){
+    hh = Number(DueState.time.slice(0, 2));
+    mm = Math.round(Number(DueState.time.slice(3, 5)) / 5) * 5;
+    if(mm > 55) mm = 55;
+  }else{
+    const now = new Date();
+    hh = (now.getHours() + 1) % 24;
+    mm = 0;
+  }
+
+  const scrollTo = (host, value) => {
+    const el = $$('.tw-item', host).find(x => Number(x.dataset.v) === value);
+    if(!el) return;
+    host.scrollTop = el.offsetTop - (host.clientHeight - el.offsetHeight) / 2;
+    highlightWheel(host);
+  };
+  // Ждём кадр: до отрисовки панели размеры ещё нулевые
+  requestAnimationFrame(() => { scrollTo(hostH, hh); scrollTo(hostM, mm); });
+}
+
 function wireDuePicker(){
   const field = $('#dueField');
   const panel = $('#duePanel');
@@ -5068,7 +5508,7 @@ function wireDuePicker(){
     }
     haptic('light');
     panel.hidden = !panel.hidden;
-    if(!panel.hidden){ renderDueChips(); renderDueCalendar(); }
+    if(!panel.hidden){ renderDueChips(); renderDueCalendar(); syncTimeWheels(); }
   };
 
   $('#dueCalPrev').onclick = () => {
@@ -5080,25 +5520,20 @@ function wireDuePicker(){
     renderDueCalendar();
   };
 
-  const timeInput = $('#dueTimeInput');
-  timeInput.addEventListener('input', () => {
-    let v = timeInput.value.replace(/[^\d:]/g, '');
-    if(v.length === 2 && !v.includes(':')) v += ':';
-    timeInput.value = v.slice(0, 5);
-    if(/^\d{2}:\d{2}$/.test(timeInput.value)){
-      const [h, m] = timeInput.value.split(':').map(Number);
-      if(h < 24 && m < 60){
-        if(!DueState.date) dueSet(ymd(new Date()), timeInput.value);
-        else { DueState.time = timeInput.value; renderDueField(); }
-      }
-    }
-  });
+  buildTimeWheels();
 
   $$('.due-time-row .due-chip[data-time]').forEach(b => b.onclick = () => {
     haptic('light');
-    timeInput.value = b.dataset.time;
-    if(!DueState.date) dueSet(ymd(new Date()), b.dataset.time);
-    else { DueState.time = b.dataset.time; renderDueField(); }
+    const v = b.dataset.time;
+    if(!v){                              // «Без времени»
+      DueState.time = null;
+      renderDueField();
+      syncTimeWheels();
+      return;
+    }
+    if(!DueState.date) dueSet(ymd(new Date()), v);
+    else { DueState.time = v; renderDueField(); }
+    syncTimeWheels();
   });
 }
 
@@ -5232,7 +5667,6 @@ function openTaskModal(task){
   }
   wireDuePicker();
   $('#duePanel').hidden = true;
-  $('#dueTimeInput').value = DueState.time || '';
   renderDueField();
 
   TaskDraft.icon = task ? (task.icon || null) : null;
@@ -5290,16 +5724,24 @@ function hideTgBackButton(){
   TG.BackButton.hide();
 }
 
-function fillCategorySelect(select, selectedId){
-  select.innerHTML = `<option value="">${t('category.none')}</option>` +
-    State.categories.map(c => `<option value="${c.id}" ${c.id === selectedId ? 'selected' : ''}>${escapeHtml(c.name)}</option>`).join('');
+let categoryPicker = null;
+
+function fillCategorySelect(host, selectedId){
+  const options = [{value: '', label: t('category.none')}].concat(
+    State.categories.map(c => ({value: c.id, label: c.name, color: categoryColor(c.id)}))
+  );
+  categoryPicker = createPicker(host, {
+    options,
+    value: selectedId == null ? '' : selectedId,
+    onChange: () => {},
+  });
 }
 
 async function saveTaskModal(){
   const text = $('#tmText').value.trim();
   if(!text){ toast(t('task.needName'), 'warn'); $('#tmText').focus(); return; }
   const priority = $('#tmPriority').querySelector('.on').dataset.v;
-  const catRaw = $('#tmCategory').value;
+  const catRaw = categoryPicker ? categoryPicker.value : '';
   const category_id = catRaw ? Number(catRaw) : null;
 
   const due_date = DueState.date
